@@ -1,6 +1,8 @@
 package com.loxewyx.profit;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 
@@ -22,6 +24,9 @@ import com.getcapacitor.annotation.PermissionCallback;
     }
 )
 public class WeighInReminderPlugin extends Plugin {
+    private static final String ACTION_PREFS = "profit-notification-actions";
+    private static final String KEY_OPEN_WEIGH_IN = "open-weigh-in";
+
     @PluginMethod
     public void schedule(PluginCall call) {
         boolean enabled = call.getBoolean("enabled", false);
@@ -34,6 +39,27 @@ public class WeighInReminderPlugin extends Plugin {
             return;
         }
         applySchedule(call, enabled, hour, minute, language);
+    }
+
+    @PluginMethod
+    public void consumeOpenWeighIn(PluginCall call) {
+        android.content.SharedPreferences preferences = getContext()
+            .getSharedPreferences(ACTION_PREFS, Context.MODE_PRIVATE);
+        boolean openWeighIn = preferences.getBoolean(KEY_OPEN_WEIGH_IN, false);
+        if (openWeighIn) preferences.edit().remove(KEY_OPEN_WEIGH_IN).apply();
+        JSObject result = new JSObject();
+        result.put("openWeighIn", openWeighIn);
+        call.resolve(result);
+    }
+
+    static boolean recordNotificationAction(Context context, Intent intent) {
+        if (intent == null || !intent.getBooleanExtra(WeighInReminderReceiver.EXTRA_OPEN_WEIGH_IN, false))
+            return false;
+        context.getSharedPreferences(ACTION_PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_OPEN_WEIGH_IN, true)
+            .apply();
+        return true;
     }
 
     @PermissionCallback

@@ -159,6 +159,12 @@ const safeRestSeconds = (value, fallback = 60) => {
     ? Math.min(3600, Math.max(0, Math.round(seconds)))
     : fallback;
 };
+const boundedIntegerValue = (value, minimum, maximum, fallback) => {
+  const numeric = value === "" || value === null ? Number.NaN : Number(value);
+  return Number.isFinite(numeric)
+    ? Math.min(maximum, Math.max(minimum, Math.round(numeric)))
+    : fallback;
+};
 const normalizeExerciseData = (exercise = {}) => {
   const { category, subtype, demo, ...normalized } = exercise;
   const legacyActivity = ["Cardio", "Movilidad"].includes(category);
@@ -1118,6 +1124,19 @@ const icons = {
   arrow: (
     <>
       <path d="M5 12h14M13 6l6 6-6 6" />
+    </>
+  ),
+  globe: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <ellipse cx="12" cy="12" rx="4" ry="9" />
+      <path d="M3 12h18M4.5 7.5h15M4.5 16.5h15" />
+    </>
+  ),
+  external: (
+    <>
+      <path d="M14 4h6v6M20 4l-9 9" />
+      <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
     </>
   ),
   chevron: <path d="m9 18 6-6-6-6" />,
@@ -5456,7 +5475,7 @@ function ProfilePage({
           </div>
           <button
             type="button"
-            class="delete-data-action"
+            class="delete-data-action profile-data-card"
             onClick={onDeleteWorkouts}
           >
             <span class="delete-data-icon">
@@ -5468,7 +5487,25 @@ function ProfilePage({
             </span>
             <Icon name="chevron" size={15} className="delete-data-chevron" />
           </button>
-          <div class="local-note">
+          <a
+            class="online-routine-card profile-data-card"
+            href="https://loxewyx.github.io/ProFit/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Crea y comparte tus rutinas online"
+          >
+            <span class="online-routine-icon">
+              <Icon name="globe" size={17} />
+            </span>
+            <span class="online-routine-copy">
+              <strong>Crea y comparte tus rutinas online</strong>
+              <small>
+                Diseña rutinas desde la web y comparte un enlace para abrirlas en ProFit.
+              </small>
+            </span>
+            <Icon name="external" size={15} className="online-routine-open" />
+          </a>
+          <div class="local-note profile-data-card">
             <span class="local-lock">⌑</span>
             <div>
               <strong>Tus datos son tuyos</strong>
@@ -6479,7 +6516,10 @@ function ConfirmModal({ confirmation, onCancel, onConfirm }) {
           <Button variant="quiet" onClick={onCancel}>
             Volver
           </Button>
-          <Button className="button-danger" onClick={onConfirm}>
+          <Button
+            variant={confirmation.buttonVariant || "danger"}
+            onClick={onConfirm}
+          >
             {confirmation.confirmLabel || "Confirmar"}
           </Button>
         </div>
@@ -7757,8 +7797,8 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
     onSave({
       ...normalizeExerciseData(form),
       id: form.id || uid(),
-      sets: Number(form.sets),
-      rest: Number(form.rest),
+      sets: boundedIntegerValue(form.sets, 1, 20, 3),
+      rest: boundedIntegerValue(form.rest, 0, 600, 90),
       duration: Number(form.duration),
       cues,
       secondary:
@@ -7793,8 +7833,9 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
           <input
             required
             autoFocus
+            maxLength="80"
             value={nameInputValue}
-            onInput={(e) => change("name", e.currentTarget.value)}
+            onInput={(e) => change("name", e.currentTarget.value.slice(0, 80))}
             placeholder="Ej. Press inclinado con mancuernas"
           />
         </label>
@@ -8008,10 +8049,22 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
               Series
               <input
                 type="number"
+                inputMode="numeric"
+                step="1"
                 min="1"
                 max="20"
+                required
                 value={form.sets}
-                onInput={(e) => change("sets", e.currentTarget.value)}
+                onInput={(e) => {
+                  const value = e.currentTarget.value;
+                  change(
+                    "sets",
+                    value === "" ? "" : boundedIntegerValue(value, 1, 20, 20),
+                  );
+                }}
+                onBlur={() =>
+                  change("sets", boundedIntegerValue(form.sets, 1, 20, 3))
+                }
               />
             </label>
           )}
@@ -8019,8 +8072,9 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
             <label>
               Repeticiones o duración
               <input
+                maxLength="40"
                 value={form.reps}
-                onInput={(e) => change("reps", e.currentTarget.value)}
+                onInput={(e) => change("reps", e.currentTarget.value.slice(0, 40))}
                 placeholder="Ej. 8–12 o 20 min"
               />
             </label>
@@ -8030,10 +8084,21 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
               Descanso (s)
               <input
                 type="number"
+                inputMode="numeric"
+                step="1"
                 min="0"
                 max="600"
                 value={form.rest}
-                onInput={(e) => change("rest", e.currentTarget.value)}
+                onInput={(e) => {
+                  const value = e.currentTarget.value;
+                  change(
+                    "rest",
+                    value === "" ? "" : boundedIntegerValue(value, 0, 600, 600),
+                  );
+                }}
+                onBlur={() =>
+                  change("rest", boundedIntegerValue(form.rest, 0, 600, 90))
+                }
               />
             </label>
           )}
@@ -8042,8 +8107,9 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
           Cómo se realiza
           <textarea
             rows="3"
+            maxLength="1000"
             value={descriptionInputValue}
-            onInput={(e) => change("description", e.currentTarget.value)}
+            onInput={(e) => change("description", e.currentTarget.value.slice(0, 1000))}
             placeholder="Describe el movimiento, el equipo y la postura."
           />
         </label>
@@ -8051,8 +8117,9 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
           Puntos clave · uno por línea
           <textarea
             rows="3"
+            maxLength="1000"
             value={cueInputValue}
-            onInput={(e) => change("cues", e.currentTarget.value)}
+            onInput={(e) => change("cues", e.currentTarget.value.slice(0, 1000))}
             placeholder={
               "Ajusta la postura\nControla el recorrido\nRespira durante el esfuerzo"
             }
@@ -10783,6 +10850,11 @@ function App() {
     if (isWarningMessage(message)) playWarningSound();
     setToastState(message);
   };
+  const openWeighInModal = () => {
+    setTab("profile");
+    setEditingMeasure(null);
+    setMeasureOpen(true);
+  };
 
   useEffect(() => {
     const importRoutinePlan = (value) => {
@@ -10790,33 +10862,65 @@ function App() {
       handledRoutinePlans.current.add(value);
       try {
         const encoded = value.replace(/-/g, "+").replace(/_/g, "/");
-      const binary = window.atob(encoded);
-      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-      const payload = JSON.parse(new TextDecoder().decode(bytes));
-      if (
-        payload?.type !== "profit-routine-plan" ||
-        payload.version !== 1 ||
-        !Array.isArray(payload.routines) ||
-        !payload.routines.length ||
-        payload.routines.length > 7 ||
-        payload.routines.some(
-          (routine) =>
-            !routine ||
-            typeof routine.id !== "string" ||
-            typeof routine.name !== "string" ||
-            !Array.isArray(routine.exercises) ||
-            routine.exercises.length > 30 ||
-            routine.exercises.some((id) => typeof id !== "string"),
+        const binary = window.atob(encoded);
+        const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+        const payload = JSON.parse(new TextDecoder().decode(bytes));
+        if (
+          payload?.type !== "profit-routine-plan" ||
+          payload.version !== 1 ||
+          !Array.isArray(payload.routines) ||
+          !payload.routines.length ||
+          payload.routines.length > 7 ||
+          (payload.exercises !== undefined &&
+            (!Array.isArray(payload.exercises) ||
+              payload.exercises.length > 100 ||
+              payload.exercises.some(
+                (exercise) =>
+                  !exercise ||
+                  typeof exercise.id !== "string" ||
+                  !exercise.id.startsWith("builder-") ||
+                  typeof exercise.name !== "string" ||
+                  typeof exercise.muscle !== "string",
+              ))) ||
+          payload.routines.some(
+            (routine) =>
+              !routine ||
+              typeof routine.id !== "string" ||
+              typeof routine.name !== "string" ||
+              !Array.isArray(routine.exercises) ||
+              routine.exercises.length > 30 ||
+              routine.exercises.some((id) => typeof id !== "string"),
+          )
         )
-      )
-        throw new Error("Invalid routine plan");
-      setRoutineGroups((current) =>
-        mergeRoutineGroups(current, payload.routines.map((routine) => routine.group)),
-      );
-      setRoutines((current) => mergeById(current, payload.routines));
-      setSelectedRoutine(payload.routines[0]);
-      setTab("training");
-      setToast("Rutina importada");
+          throw new Error("Invalid routine plan");
+        const routineCount = payload.routines.length;
+        const exerciseCount = new Set(
+          payload.routines.flatMap((routine) => routine.exercises),
+        ).size;
+        setConfirmation({
+          title: "Añadir ejercicios",
+          message: `Se añadirán ${routineCount} ${routineCount === 1 ? "rutina" : "rutinas"} a ProFit, con ${exerciseCount} ${exerciseCount === 1 ? "ejercicio" : "ejercicios"}. ¿Quieres continuar?`,
+          confirmLabel: "Añadir",
+          icon: "dumbbell",
+          buttonVariant: "primary",
+          onConfirm: () => {
+            if (payload.exercises?.length) {
+              setExercises((current) =>
+                mergeById(current, payload.exercises.map(normalizeExerciseData)),
+              );
+            }
+            setRoutineGroups((current) =>
+              mergeRoutineGroups(
+                current,
+                payload.routines.map((routine) => routine.group),
+              ),
+            );
+            setRoutines((current) => mergeById(current, payload.routines));
+            setSelectedRoutine(payload.routines[0]);
+            setTab("training");
+            setToast("Rutina importada");
+          },
+        });
       } catch {
         setToast("No se pudo importar la rutina del enlace");
       } finally {
@@ -10839,6 +10943,20 @@ function App() {
         .catch(() => {});
     }
     return () => window.removeEventListener("hashchange", readRoutineHash);
+  }, []);
+
+  useEffect(() => {
+    const consumeWeighInAction = () => {
+      WeighInReminder.consumeOpenWeighIn()
+        .then((result) => {
+          if (result?.openWeighIn) openWeighInModal();
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("profit:open-weigh-in", consumeWeighInAction);
+    if (Capacitor.getPlatform() === "android") consumeWeighInAction();
+    return () =>
+      window.removeEventListener("profit:open-weigh-in", consumeWeighInAction);
   }, []);
 
   useEffect(() => {
@@ -11258,11 +11376,19 @@ function App() {
         now.getMinutes() === minute
       ) {
         playNotificationSound();
-        new window.Notification(translateText("Hora de tu pesaje"), {
+        const notification = new window.Notification(
+          translateText("Hora de tu pesaje"),
+          {
           body: translateText(
             "Registra tu peso de hoy y sigue tu progreso en ProFit.",
           ),
-        });
+          },
+        );
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+          openWeighInModal();
+        };
         localStorage.setItem("profit-weigh-in-notified-date", key);
       }
     };
@@ -12574,28 +12700,9 @@ function App() {
             >
               <Icon name={icon} size={18} />
               <span>{label}</span>
-              {id === "home" && <span class="nav-indicator" />}
             </button>
           ))}
         </nav>
-        <div class="sidebar-bottom">
-          <div class="sidebar-tip">
-            <div class="tip-glyph">✳</div>
-            <p>{motivation}</p>
-            <span>— HOY, A TU RITMO</span>
-          </div>
-          <button class="profile-mini" onClick={() => setTab("profile")}>
-            <Avatar name={name} src={avatar} className="mini-avatar" />
-            <span>
-              <strong>{name.trim() || "Perfil"}</strong>
-              <small>Perfil personal</small>
-            </span>
-            <Icon name="more" size={17} />
-          </button>
-          <span class="sidebar-version">
-            PROFIT APP <i>·</i> V0.2
-          </span>
-        </div>
       </aside>
       <main class="main-area">
         <div

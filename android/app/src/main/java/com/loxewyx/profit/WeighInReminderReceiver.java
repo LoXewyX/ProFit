@@ -22,6 +22,7 @@ public class WeighInReminderReceiver extends BroadcastReceiver {
     static final String KEY_HOUR = "hour";
     static final String KEY_MINUTE = "minute";
     static final String KEY_LANGUAGE = "language";
+    static final String EXTRA_OPEN_WEIGH_IN = "com.loxewyx.profit.OPEN_WEIGH_IN";
     static final String CHANNEL_ID = "profit-weigh-in-reminders-sound-v2";
     private static final int ALARM_ID = 6108;
     private static final int NOTIFICATION_ID = 6108;
@@ -104,6 +105,11 @@ public class WeighInReminderReceiver extends BroadcastReceiver {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
         Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+        if (launchIntent != null) {
+            launchIntent.setAction(context.getPackageName() + ".OPEN_WEIGH_IN");
+            launchIntent.putExtra(EXTRA_OPEN_WEIGH_IN, true);
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        }
         PendingIntent contentIntent = launchIntent == null ? null : PendingIntent.getActivity(
             context, ALARM_ID, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );

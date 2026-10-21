@@ -106,6 +106,8 @@ const entries = [
   ["Indicaciones al completar ejercicios y sesiones","Avisos en completar exercicis i sessions","Cues when exercises and workouts are completed"],
   ["DATOS Y PRIVACIDAD","DADES I PRIVACITAT","DATA & PRIVACY"],
   ["Copia de seguridad","Còpia de seguretat","Backup"],
+  ["Crea y comparte tus rutinas online","Crea i comparteix les teves rutines en línia","Create and share your routines online"],
+  ["Diseña rutinas desde la web y comparte un enlace para abrirlas en ProFit.","Dissenya rutines des del web i comparteix un enllaç per obrir-les a ProFit.","Build routines on the web and share a link to open them in ProFit."],
   ["Tus datos son tuyos","Les teves dades són teves","Your data belongs to you"],
   ["Sin cuentas, sin servidores; los datos permanecen en el dispositivo.","Sense comptes ni servidors; les dades es queden al dispositiu.","No accounts or servers; your data stays on this device."],
   ["PERFIL Y PREFERENCIAS","PERFIL I PREFERÈNCIES","PROFILE & PREFERENCES"],
@@ -316,7 +318,6 @@ const entries = [
   ["Buen comienzo","Bon començament","A good start"],
   ["Hoy cuenta.","Avui compta.","Today counts."],
   ["Muévete a tu ritmo.","Mou-te al teu ritme.","Move at your own pace."],
-  ["— HOY, A TU RITMO","— AVUI, AL TEU RITME","— TODAY, AT YOUR PACE"],
   ["Tu progreso, tuyo.","El teu progrés és teu.","Your progress, your own."],
   ["TU PROGRESO, TUYO.","EL TEU PROGRÉS ÉS TEU.","YOUR PROGRESS, YOUR OWN."],
   ["Acceso rápido a entrenar","Accés ràpid a entrenar","Quick access to training"],
@@ -715,10 +716,7 @@ const entries = [
   ["Compartir entrenamiento","Compartir entrenament","Share workout"],
   ["Compartir rutina","Compartir rutina","Share routine"],
   ["Guardar duración","Desar la durada","Save duration"],
-  ["Perfil personal","Perfil personal","Personal profile"],
-  ["PROFIT APP","APP PROFIT","PROFIT APP"],
   ["RUTINA PERSONAL","RUTINA PERSONAL","PERSONAL ROUTINE"],
-  ["MENÚ PRINCIPAL","MENÚ PRINCIPAL","MAIN MENU"],
   ["Aún no hay rutinas guardadas. Puedes crear una ahora o comenzar una sesión libre.","Encara no hi ha rutines desades. En pots crear una o començar una sessió lliure.","No saved routines yet. Create one or start a free workout."],
   ["Más registros, más trabajo acumulado","Més registres, més feina acumulada","More entries, more work accumulated"],
   ["Sigue ampliando","Continua ampliant","Keep expanding"],
@@ -2674,6 +2672,10 @@ function translateDynamicSentence(value, language) {
   const ca = language === 'ca';
   let match = value.match(/^Eliminar (\d+)$/);
   if (match) return ca ? `Eliminar ${match[1]}` : `Delete ${match[1]}`;
+  match = value.match(/^Se añadirán (\d+) rutinas? a ProFit, con (\d+) ejercicios?\. ¿Quieres continuar\?$/);
+  if (match) return ca
+    ? `S’afegiran ${match[1]} ${Number(match[1]) === 1 ? 'rutina' : 'rutines'} a ProFit, amb ${match[2]} ${Number(match[2]) === 1 ? 'exercici' : 'exercicis'}. Vols continuar?`
+    : `${match[1]} ${Number(match[1]) === 1 ? 'routine' : 'routines'} with ${match[2]} ${Number(match[2]) === 1 ? 'exercise' : 'exercises'} will be added to ProFit. Would you like to continue?`;
   match = value.match(/^(\d+(?:[.,]\d+)?) min estimados$/);
   if (match) return ca ? `${match[1]} min estimats` : `${match[1]} min estimated`;
   match = value.match(/^(.+?), sin entrenamientos$/);

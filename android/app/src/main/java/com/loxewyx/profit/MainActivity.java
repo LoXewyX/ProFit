@@ -20,6 +20,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AndroidNavigationPlugin.class);
         registerPlugin(RoutineLinkPlugin.class);
         super.onCreate(savedInstanceState);
+        WeighInReminderPlugin.recordNotificationAction(this, getIntent());
         String initialRoutinePayload = routinePayload(getIntent());
         if (initialRoutinePayload != null)
             RoutineLinkPlugin.savePending(this, initialRoutinePayload);
@@ -41,6 +42,7 @@ public class MainActivity extends BridgeActivity {
     protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        boolean openWeighIn = WeighInReminderPlugin.recordNotificationAction(this, intent);
         String routinePayload = routinePayload(intent);
         if (routinePayload != null && getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().evaluateJavascript(
@@ -49,6 +51,12 @@ public class MainActivity extends BridgeActivity {
             );
         }
         WorkoutNotificationPlugin.handleNotificationAction(this, intent, getBridge() == null ? null : getBridge().getWebView());
+        if (openWeighIn && getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().evaluateJavascript(
+                "window.dispatchEvent(new Event('profit:open-weigh-in'))",
+                null
+            );
+        }
     }
 
     private String routinePayload(Intent intent) {
