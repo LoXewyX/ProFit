@@ -40,3 +40,22 @@
 .hero-brand-symbol i:nth-child(1){height:18px;opacity:.58}
 .hero-brand-symbol i:nth-child(2){height:28px;opacity:.8}
 .hero-brand-symbol i:nth-child(3){height:38px}
+.brand{gap:10px;font-size:1rem}
+.brand>span>span{color:var(--accent)}
+.brand-mark{width:auto;height:23px;padding:0 3px;border-radius:0;background:transparent;transform:skew(-18deg)}
+.brand-mark i{width:5px;transform:none;transform-origin:center bottom;animation:profit-logo-glow 2.8s ease-in-out infinite}
+.brand-mark i:nth-child(1){height:11px;opacity:.55}
+.brand-mark i:nth-child(2){height:18px;opacity:.8;animation-delay:.14s}
+.brand-mark i:nth-child(3){height:23px;animation-delay:.28s}
+@keyframes profit-logo-glow{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 3px var(--accent))}}
+.hero-orbit.orbit-one{animation:orbit-breathe 5.2s ease-in-out infinite}
+.hero-orbit.orbit-two{animation:orbit-turn 24s linear infinite}
+.hero-orbit.orbit-three{animation:orbit-pulse 3.5s ease-in-out infinite}
+.hero-center{animation:dumbbell-drift 4s ease-in-out infinite;will-change:transform}
+.hero-brand-symbol i{animation:profit-logo-glow 2.8s ease-in-out infinite}
+.hero-brand-symbol i:nth-child(2){animation-delay:.14s}
+.hero-brand-symbol i:nth-child(3){animation-delay:.28s}
+@keyframes orbit-breathe{0%,100%{transform:translate(-50%,-50%) scale(.94);opacity:.68}50%{transform:translate(-50%,-50%) scale(1.07);opacity:1}}
+@keyframes orbit-turn{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes orbit-pulse{0%,100%{transform:translate(-50%,-50%) scale(.92);opacity:.65}50%{transform:translate(-50%,-50%) scale(1.12);opacity:1}}
+@keyframes dumbbell-drift{0%,100%{transform:translate(-50%,-50%) rotate(-8deg) translateY(0)}50%{transform:translate(-50%,-50%) rotate(0) translateY(-4px)}}
