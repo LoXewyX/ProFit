@@ -44,6 +44,7 @@ import "./style.css";
 const WorkoutNotification = registerPlugin("WorkoutNotification");
 const AndroidShare = registerPlugin("AndroidShare");
 const AndroidNavigation = registerPlugin("AndroidNavigation");
+const RoutineLink = registerPlugin("RoutineLink");
 const HydrationReminder = registerPlugin("HydrationReminder");
 const WeighInReminder = registerPlugin("WeighInReminder");
 const ProteinReminder = registerPlugin("ProteinReminder");
@@ -10751,7 +10752,7 @@ function App() {
   const [formExercise, setFormExercise] = useState(undefined);
   const [formRoutine, setFormRoutine] = useState(undefined);
   const [selectedRoutine, setSelectedRoutine] = useState(null);
-  const routinePlanLinkHandled = useRef(false);
+  const handledRoutinePlans = useRef(new Set());
   const [activeSession, setActiveSession] = useState(() => {
     const saved = loadJson("profit-active-session", null);
     if (!saved) return null;
@@ -10784,12 +10785,11 @@ function App() {
   };
 
   useEffect(() => {
-    if (routinePlanLinkHandled.current) return;
-    const match = window.location.hash.match(/^#routine-plan=([A-Za-z0-9_-]+)$/);
-    if (!match) return;
-    routinePlanLinkHandled.current = true;
-    try {
-      const encoded = match[1].replace(/-/g, "+").replace(/_/g, "/");
+    const importRoutinePlan = (value) => {
+      if (!value || handledRoutinePlans.current.has(value)) return;
+      handledRoutinePlans.current.add(value);
+      try {
+        const encoded = value.replace(/-/g, "+").replace(/_/g, "/");
       const binary = window.atob(encoded);
       const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
       const payload = JSON.parse(new TextDecoder().decode(bytes));
@@ -10817,15 +10817,28 @@ function App() {
       setSelectedRoutine(payload.routines[0]);
       setTab("training");
       setToast("Rutina importada");
-    } catch {
-      setToast("No se pudo importar la rutina del enlace");
-    } finally {
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${window.location.search}`,
-      );
+      } catch {
+        setToast("No se pudo importar la rutina del enlace");
+      } finally {
+        window.history.replaceState(
+          null,
+          "",
+          `${window.location.pathname}${window.location.search}`,
+        );
+      }
+    };
+    const readRoutineHash = () => {
+      const match = window.location.hash.match(/^#routine-plan=([A-Za-z0-9_-]+)$/);
+      if (match) importRoutinePlan(match[1]);
+    };
+    window.addEventListener("hashchange", readRoutineHash);
+    readRoutineHash();
+    if (Capacitor.getPlatform() === "android") {
+      RoutineLink.consume()
+        .then(({ payload }) => importRoutinePlan(payload))
+        .catch(() => {});
     }
+    return () => window.removeEventListener("hashchange", readRoutineHash);
   }, []);
 
   useEffect(() => {

@@ -2,6 +2,8 @@ package com.loxewyx.profit;
 
 import android.os.Bundle;
 import android.view.View;
+import android.content.Intent;
+import android.net.Uri;
 
 import androidx.activity.OnBackPressedCallback;
 
@@ -16,7 +18,11 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ProteinReminderPlugin.class);
         registerPlugin(AndroidSharePlugin.class);
         registerPlugin(AndroidNavigationPlugin.class);
+        registerPlugin(RoutineLinkPlugin.class);
         super.onCreate(savedInstanceState);
+        String initialRoutinePayload = routinePayload(getIntent());
+        if (initialRoutinePayload != null)
+            RoutineLinkPlugin.savePending(this, initialRoutinePayload);
         WorkoutNotificationPlugin.handleNotificationAction(this, getIntent(), getBridge().getWebView());
         // Disable Android's native edge stretch when the WebView reaches a scroll limit.
         getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -35,6 +41,21 @@ public class MainActivity extends BridgeActivity {
     protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        String routinePayload = routinePayload(intent);
+        if (routinePayload != null && getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().evaluateJavascript(
+                "window.location.hash='routine-plan=" + routinePayload + "'",
+                null
+            );
+        }
         WorkoutNotificationPlugin.handleNotificationAction(this, intent, getBridge() == null ? null : getBridge().getWebView());
+    }
+
+    private String routinePayload(Intent intent) {
+        Uri data = intent == null ? null : intent.getData();
+        if (data == null || !"profit".equals(data.getScheme()) || !"routine-plan".equals(data.getHost()))
+            return null;
+        String encoded = data.getLastPathSegment();
+        return encoded != null && encoded.matches("[A-Za-z0-9_-]+") ? encoded : null;
     }
 }
