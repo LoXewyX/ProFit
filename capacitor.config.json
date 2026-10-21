@@ -1,0 +1,6 @@
+{
+  "appId": "com.loxewyx.profit",
+  "appName": "ProFit",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
