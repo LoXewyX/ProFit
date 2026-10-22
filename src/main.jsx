@@ -14,6 +14,7 @@ import {
   translateText,
 } from "./i18n.js";
 import { Capacitor, registerPlugin } from "@capacitor/core";
+import { decodeRoutinePlan } from "./routine-link-codec.js";
 const { default: exerciseLibrary } = await import("./exercise-library.json");
 import {
   buildMuscleLoad,
@@ -10861,10 +10862,7 @@ function App() {
       if (!value || handledRoutinePlans.current.has(value)) return;
       handledRoutinePlans.current.add(value);
       try {
-        const encoded = value.replace(/-/g, "+").replace(/_/g, "/");
-        const binary = window.atob(encoded);
-        const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-        const payload = JSON.parse(new TextDecoder().decode(bytes));
+        const payload = decodeRoutinePlan(value);
         if (
           payload?.type !== "profit-routine-plan" ||
           payload.version !== 1 ||
