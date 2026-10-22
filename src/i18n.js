@@ -17,6 +17,8 @@ const entries = [
   ["Añadir","Afegir","Add"],
   ["Editar","Editar","Edit"],
   ["Importar","Importar","Import"],
+  ["Importar rutinas","Importar rutines","Import routines"],
+  ["Los ejercicios incluidos ya están en tu biblioteca.","Els exercicis inclosos ja són a la teva biblioteca.","The included exercises are already in your library."],
   ["Exportar","Exportar","Export"],
   ["Volver","Tornar","Back"],
   ["Continuar","Continuar","Continue"],
@@ -2672,6 +2674,25 @@ function translateDynamicSentence(value, language) {
   const ca = language === 'ca';
   let match = value.match(/^Eliminar (\d+)$/);
   if (match) return ca ? `Eliminar ${match[1]}` : `Delete ${match[1]}`;
+  match = value.match(/^Se añadir(?:á|án) (\d+) rutinas? con (\d+) ejercicios? en total\.(?: Se añadir(?:á|án) (\d+) ejercicios? nuevos? a tu biblioteca\.| Los ejercicios incluidos ya están en tu biblioteca\.)? ¿Quieres continuar\?$/);
+  if (match) {
+    const routines = Number(match[1]) === 1 ? (ca ? 'rutina' : 'routine') : (ca ? 'rutines' : 'routines');
+    const exercises = Number(match[2]) === 1 ? (ca ? 'exercici' : 'exercise') : (ca ? 'exercicis' : 'exercises');
+    let sentence = ca
+      ? `${Number(match[1]) === 1 ? 'S’afegirà' : 'S’afegiran'} ${match[1]} ${routines} amb ${match[2]} ${exercises} en total.`
+      : `${match[1]} ${routines} with ${match[2]} ${exercises} in total will be added.`;
+    if (match[3]) {
+      const newExercises = Number(match[3]) === 1 ? (ca ? 'exercici nou' : 'new exercise') : (ca ? 'exercicis nous' : 'new exercises');
+      sentence += ca
+        ? ` ${Number(match[3]) === 1 ? 'S’afegirà' : 'S’afegiran'} ${match[3]} ${newExercises} a la biblioteca.`
+        : ` ${match[3]} ${newExercises} will be added to your library.`;
+    } else if (value.includes('Los ejercicios incluidos')) {
+      sentence += ca
+        ? ' Els exercicis inclosos ja són a la teva biblioteca.'
+        : ' The included exercises are already in your library.';
+    }
+    return sentence + (ca ? ' Vols continuar?' : ' Would you like to continue?');
+  }
   match = value.match(/^Se añadirán (\d+) rutinas? a ProFit, con (\d+) ejercicios?\. ¿Quieres continuar\?$/);
   if (match) return ca
     ? `S’afegiran ${match[1]} ${Number(match[1]) === 1 ? 'rutina' : 'rutines'} a ProFit, amb ${match[2]} ${Number(match[2]) === 1 ? 'exercici' : 'exercicis'}. Vols continuar?`
@@ -2703,6 +2724,11 @@ function translateDynamicSentence(value, language) {
     const verb = ca ? (match[1] === 'Contraer' ? 'Plega' : 'Desplega') : (match[1] === 'Contraer' ? 'Collapse' : 'Expand');
     if (match[2] === 'Sin grupo') return ca ? `${verb} les rutines sense grup` : `${verb} ungrouped routines`;
     return `${verb} ${ca ? 'el grup' : 'group'} ${localizedLabel(match[2])}`;
+  }
+  match = value.match(/^Crear rutina en (.+)$/);
+  if (match) {
+    if (match[1] === 'Sin grupo') return ca ? 'Crea una rutina sense grup' : 'Create a routine without a group';
+    return ca ? `Crea una rutina al grup ${localizedLabel(match[1])}` : `Create a routine in the ${localizedLabel(match[1])} group`;
   }
   match = value.match(/^Arrastrar (.+?) para cambiar (?:su orden|el orden)$/);
   if (match) {

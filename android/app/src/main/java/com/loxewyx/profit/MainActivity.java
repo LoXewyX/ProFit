@@ -64,6 +64,6 @@ public class MainActivity extends BridgeActivity {
         if (data == null || !"profit".equals(data.getScheme()) || !"routine-plan".equals(data.getHost()))
             return null;
         String encoded = data.getLastPathSegment();
-        return encoded != null && encoded.matches("[A-Za-z0-9_-]+") ? encoded : null;
+        return encoded != null && encoded.matches("[A-Za-z0-9_$-]+") ? encoded : null;
     }
 }

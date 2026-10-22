@@ -614,6 +614,9 @@ h1, h2, p { margin-top: 0; }
 .exercise-preview-upload strong { color: #d6dfd2; font-size: 10px; font-weight: 580; }
 .exercise-preview-upload small { color: #829080; font-size: 8px; line-height: 1.4; }
 .exercise-preview-thumb { display: flex; align-items: center; gap: 6px; min-width: 0; color: #849083; font-size: 9px; }
+.exercise-preview-thumb { min-height: 54px; }
+.exercise-preview-thumb > span { display: inline-flex; align-items: center; gap: 6px; }
+.exercise-preview-choose.icon-button { display: inline-flex; width: auto; min-width: 68px; height: 31px; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; white-space: nowrap; }
 .exercise-preview-thumb img { display: block; max-width: 100%; max-height: 84px; border-radius: 6px; object-fit: cover; }
 .exercise-media-error { color: #ef9c89; font-size: 8px; }
 .exercise-media-remove { justify-self: start; display: inline-flex; align-items: center; gap: 5px; padding: 3px 0; color: #ce8f7e; font-size: 8px; }
@@ -2435,6 +2438,7 @@ html, body, #app, .app-shell, .main-area { overscroll-behavior-y: none; }
   .exercise-media-empty span { font-size: 12px; }
   .exercise-form label { gap: 7px; font-size: 12px; line-height: 1.3; }
   .exercise-form input, .exercise-form select, .exercise-form textarea, .workout-name-label input { height: 44px; min-height: 44px; padding: 0 11px; border-radius: 8px; font-size: 15px; }
+  .routine-fixed-group { min-height: 44px; padding: 0 11px; border-radius: 8px; font-size: 15px; }
   .exercise-form .exercise-tracking-options input { flex: 0 0 18px; width: 18px; height: 18px; min-height: 18px; padding: 0; }
   .exercise-form .exercise-tracking-options label { display: inline-flex; align-items: center; gap: 8px; }
   .exercise-form textarea { min-height: 92px; height: auto; padding: 11px; }
@@ -2607,6 +2611,7 @@ html, body, #app, .app-shell, .main-area { overscroll-behavior-y: none; }
 .routine-group.collapsed .routine-group-heading-row { border-radius: 11px; }
 .routine-group-heading { display: flex; flex: 1; width: 100%; min-width: 0; min-height: 48px; align-items: center; justify-content: flex-start; gap: 10px; padding: 0 6px; border: 0; background: transparent; color: #dce5d7; text-align: left; cursor: pointer; }
 .routine-group-delete { align-self: center; flex: 0 0 38px; width: 38px; height: 38px; padding: 0; }
+.routine-group-create { align-self: center; flex: 0 0 38px; width: 38px; height: 38px; padding: 0; }
 .routine-group-toggle { align-self: center; flex: 0 0 38px; width: 38px; height: 38px; padding: 0; }
 .routine-group-heading-row > .export-menu { display: flex; flex: 0 0 38px; align-items: center; justify-content: center; width: 38px; }
 .routine-group-share.export-menu-trigger { width: 38px; height: 38px; padding: 0; }
@@ -2645,7 +2650,7 @@ html, body, #app, .app-shell, .main-area { overscroll-behavior-y: none; }
   .unit-setting .segmented-control button { min-width: 34px; height: 30px; padding: 0 4px; font-size: 11px; }
   .routine-group-heading { min-height: 48px; padding-left: 3px; }
   .routine-group-heading-row { padding: 0 5px; }
-  .routine-group-delete, .routine-group-toggle { flex-basis: 40px; width: 40px; height: 40px; }
+  .routine-group-delete, .routine-group-create, .routine-group-toggle { flex-basis: 40px; width: 40px; height: 40px; }
   .routine-group .exercise-list { gap: 8px; padding: 7px; }
   .session-entry-actions .session-complete-exercise { width: 38px; min-width: 38px; }
 }
@@ -2783,6 +2788,7 @@ html, body, #app, .app-shell, .main-area { overscroll-behavior-y: none; }
 .routine-card .routine-card-utility-actions > .icon-button.danger,
 .routine-group-share.export-menu-trigger,
 .routine-group-delete.icon-button,
+.routine-group-create.icon-button,
 .routine-group-toggle.icon-button {
   border-color: transparent !important;
   background: transparent !important;
@@ -2794,15 +2800,21 @@ html, body, #app, .app-shell, .main-area { overscroll-behavior-y: none; }
 .routine-card .routine-card-utility-actions > .icon-button.danger:hover,
 .routine-group-share.export-menu-trigger:hover,
 .routine-group-delete.icon-button:hover,
+.routine-group-create.icon-button:hover,
 .routine-group-toggle.icon-button:hover { background: var(--accent-surface) !important; }
+.routine-group-create.icon-button { color: var(--accent); }
 .routine-group-delete.icon-button:focus-visible,
+.routine-group-create.icon-button:focus-visible,
 .routine-group-toggle.icon-button:focus-visible,
 .routine-group-share.export-menu-trigger:focus-visible,
 .routine-card-actions > .button:focus-visible,
 .routine-card-actions > .icon-button:focus-visible,
 .routine-card-actions .export-menu-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.routine-fixed-group { display: flex; min-height: 35px; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid #353e36; border-radius: 5px; background: #131814; color: #dce4d8; font-size: 9px; font-weight: 400; }
+.routine-fixed-group .icon { flex: 0 0 auto; color: var(--accent); }
 
 @media (max-width: 620px) {
+  .routine-fixed-group { min-height: 44px; padding: 0 11px; border-radius: 8px; font-size: 15px; }
   .workout-edit-modal { padding-bottom: max(env(safe-area-inset-bottom, 0px), 28px); }
   .workout-edit-modal .modal-card { max-height: calc(93dvh - 28px); }
   .workout-edit-modal .form-actions { position: static; margin: 0; }

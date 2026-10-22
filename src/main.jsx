@@ -613,6 +613,42 @@ function mergeById(current, incoming) {
   return [...merged.values()];
 }
 
+const routineImportVisualFields = new Set([
+  "id",
+  "media",
+  "poster",
+  "mediaType",
+  "mediaAssetId",
+  "previewAssetId",
+  "previewType",
+  "image",
+  "imageUrl",
+  "thumbnail",
+  "thumbnailUrl",
+  "custom",
+  "group",
+]);
+const canonicalExerciseValue = (value) => {
+  if (Array.isArray(value)) return value.map(canonicalExerciseValue);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonicalExerciseValue(value[key])]),
+    );
+  return value;
+};
+const routineImportExerciseKey = (exercise) =>
+  JSON.stringify(
+    canonicalExerciseValue(
+      Object.fromEntries(
+        Object.entries(normalizeExerciseData(exercise)).filter(
+          ([key]) => !routineImportVisualFields.has(key),
+        ),
+      ),
+    ),
+  );
+
 function mergeRoutineGroups(current = [], incoming = []) {
   const names = new Map();
   [
@@ -2719,6 +2755,7 @@ function RoutineGroupSection({
   onEdit,
   onShare,
   onShareGroup,
+  onCreateRoutine,
   onDelete,
   onDeleteGroup,
   index = 0,
@@ -2759,7 +2796,7 @@ function RoutineGroupSection({
               {group.name ? (
                 <span translate="no">{group.name}</span>
               ) : (
-                "Sin grupo"
+                "(Sin grupo)"
               )}
             </strong>
             <small>
@@ -2770,22 +2807,29 @@ function RoutineGroupSection({
         </button>
         <ExportMenu
           iconOnly
-          label={`Compartir ${group.name ? `grupo ${group.name}` : "rutinas sin grupo"}`}
+          label={`Compartir ${group.name ? `grupo ${group.name}` : "rutinas (Sin grupo)"}`}
           className="icon-button routine-group-share"
           onSave={() => onShareGroup?.(group, "device")}
           onShare={() => onShareGroup?.(group, "share")}
         />
-        {group.name && (
-          <button
-            type="button"
-            class="routine-group-delete icon-button danger"
-            onClick={() => onDeleteGroup?.(group)}
-            aria-label={`Eliminar grupo ${group.name} y sus ${group.routines.length} rutinas`}
-            title="Eliminar grupo y sus rutinas"
-          >
-            <Icon name="trash" size={16} />
-          </button>
-        )}
+        <button
+          type="button"
+          class="routine-group-create icon-button"
+          onClick={() => onCreateRoutine?.(group)}
+          aria-label={`Crear rutina en ${group.name || "Sin grupo"}`}
+          title={`Crear rutina en ${group.name || "Sin grupo"}`}
+        >
+          <Icon name="plus" size={17} />
+        </button>
+        <button
+          type="button"
+          class="routine-group-delete icon-button danger"
+          onClick={() => onDeleteGroup?.(group)}
+          aria-label={`Eliminar grupo ${group.name || "(Sin grupo)"} y sus ${group.routines.length} rutinas`}
+          title="Eliminar grupo y sus rutinas"
+        >
+          <Icon name="trash" size={16} />
+        </button>
         <button
           type="button"
           class="routine-group-toggle icon-button"
@@ -2851,6 +2895,7 @@ function TrainingPage({
   onEditRoutine,
   onShareRoutine,
   onShareRoutineGroup,
+  onCreateRoutineInGroup,
   onDeleteRoutine,
   onDeleteRoutineGroup,
   onStartRoutine,
@@ -3045,6 +3090,7 @@ function TrainingPage({
                 onEdit={onEditRoutine}
                 onShare={onShareRoutine}
                 onShareGroup={onShareRoutineGroup}
+                onCreateRoutine={onCreateRoutineInGroup}
                 onDelete={onDeleteRoutine}
                 onDeleteGroup={onDeleteRoutineGroup}
               />
@@ -3165,9 +3211,9 @@ function TrainingPage({
   );
 }
 
-function RoutineForm({ routine, groups = [], onClose, onSave }) {
+function RoutineForm({ routine, groups = [], fixedGroup, onClose, onSave }) {
   const [form, setForm] = useState(
-    routine || { name: "", note: "", group: "" },
+    routine || { name: "", note: "", group: fixedGroup ?? "" },
   );
   const [newGroupName, setNewGroupName] = useState("");
   const set = (key, value) =>
@@ -3181,9 +3227,11 @@ function RoutineForm({ routine, groups = [], onClose, onSave }) {
           onSave({
             ...form,
             group:
-              form.group === CREATE_ROUTINE_GROUP
-                ? newGroupName.trim()
-                : String(form.group || "").trim(),
+              fixedGroup !== undefined
+                ? fixedGroup
+                : form.group === CREATE_ROUTINE_GROUP
+                  ? newGroupName.trim()
+                  : String(form.group || "").trim(),
             id: form.id || uid(),
             exercises: form.exercises || [],
           });
@@ -3206,25 +3254,35 @@ function RoutineForm({ routine, groups = [], onClose, onSave }) {
           />
         </label>
         <div class="routine-group-picker">
-          <label>
-            Grupo de rutinas
-            <select
-              value={form.group || ""}
-              onChange={(event) => set("group", event.currentTarget.value)}
-            >
-              <option value="">Sin grupo</option>
-              {mergeRoutineGroups(
-                groups,
-                routine?.group ? [routine.group] : [],
-              ).map((group) => (
-                <option value={group} key={group}>
-                  {group}
-                </option>
-              ))}
-              <option value={CREATE_ROUTINE_GROUP}>＋ Crear grupo…</option>
-            </select>
-          </label>
-          {form.group === CREATE_ROUTINE_GROUP && (
+          {fixedGroup !== undefined ? (
+            <label>
+              Grupo de rutinas
+              <span class="routine-fixed-group" aria-readonly="true">
+                <Icon name="folderPlus" size={16} />
+                {fixedGroup || "Sin grupo"}
+              </span>
+            </label>
+          ) : (
+            <label>
+              Grupo de rutinas
+              <select
+                value={form.group || ""}
+                onChange={(event) => set("group", event.currentTarget.value)}
+              >
+                <option value="">Sin grupo</option>
+                {mergeRoutineGroups(
+                  groups,
+                  routine?.group ? [routine.group] : [],
+                ).map((group) => (
+                  <option value={group} key={group}>
+                    {group}
+                  </option>
+                ))}
+                <option value={CREATE_ROUTINE_GROUP}>＋ Crear grupo…</option>
+              </select>
+            </label>
+          )}
+          {fixedGroup === undefined && form.group === CREATE_ROUTINE_GROUP && (
             <label>
               Nombre del grupo
               <input
@@ -7909,12 +7967,13 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
             />
             <button
               type="button"
-              class="icon-button"
-              title="Elegir imagen de vista previa"
-              aria-label="Elegir imagen de vista previa"
+              class="icon-button exercise-preview-choose"
+              title={translateText("Elegir imagen de vista previa")}
+              aria-label={translateText("Elegir imagen de vista previa")}
               onClick={() => previewInput.current?.click()}
             >
               <Icon name="upload" size={15} />
+              <span>{translateText("Elegir")}</span>
             </button>
           </div>
           <div class="exercise-preview-thumb">
@@ -10653,6 +10712,8 @@ function App() {
   const [exercises, setExercises] = useState(() =>
     loadExerciseLibrary().map(({ group, ...exercise }) => exercise),
   );
+  const exercisesRef = useRef(exercises);
+  exercisesRef.current = exercises;
   const [routineGroups, setRoutineGroups] = useState(() =>
     mergeRoutineGroups(
       loadJson("profit-routine-groups", []),
@@ -10819,6 +10880,7 @@ function App() {
   const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [formExercise, setFormExercise] = useState(undefined);
   const [formRoutine, setFormRoutine] = useState(undefined);
+  const [formRoutineGroup, setFormRoutineGroup] = useState(undefined);
   const [selectedRoutine, setSelectedRoutine] = useState(null);
   const handledRoutinePlans = useRef(new Set());
   const [activeSession, setActiveSession] = useState(() => {
@@ -10892,29 +10954,92 @@ function App() {
         )
           throw new Error("Invalid routine plan");
         const routineCount = payload.routines.length;
-        const exerciseCount = new Set(
-          payload.routines.flatMap((routine) => routine.exercises),
-        ).size;
+        const totalExerciseCount = payload.routines.reduce(
+          (total, routine) => total + routine.exercises.length,
+          0,
+        );
+        const currentExercises = exercisesRef.current;
+        const importCandidates = [...currentExercises];
+        const exerciseIdMap = new Map();
+        const exercisesToMerge = [];
+        let newExerciseCount = 0;
+        for (const sourceExercise of payload.exercises || []) {
+          const incomingExercise = normalizeExerciseData(sourceExercise);
+          const incomingKey = routineImportExerciseKey(incomingExercise);
+          const matchingDefinition = importCandidates.find(
+            (exercise) => routineImportExerciseKey(exercise) === incomingKey,
+          );
+          if (matchingDefinition) {
+            exerciseIdMap.set(incomingExercise.id, matchingDefinition.id);
+            continue;
+          }
+
+          const matchingIdIndex = importCandidates.findIndex(
+            (exercise) => exercise.id === incomingExercise.id,
+          );
+          if (matchingIdIndex >= 0) {
+            // Same ID with edited non-visual data: update it, but don't count
+            // it as a newly created exercise.
+            exerciseIdMap.set(incomingExercise.id, incomingExercise.id);
+            exercisesToMerge.push(incomingExercise);
+            importCandidates[matchingIdIndex] = incomingExercise;
+            continue;
+          }
+
+          newExerciseCount++;
+          exerciseIdMap.set(incomingExercise.id, incomingExercise.id);
+          exercisesToMerge.push(incomingExercise);
+          importCandidates.push(incomingExercise);
+        }
+        const routinesToImport = payload.routines.map((routine) => {
+          const remapId = (id) => exerciseIdMap.get(id) || id;
+          return normalizeRoutineExerciseIds({
+            ...routine,
+            exercises: routine.exercises.map(remapId),
+            exerciseSettings: Object.fromEntries(
+              Object.entries(routine.exerciseSettings || {}).map(
+                ([id, settings]) => [remapId(id), settings],
+              ),
+            ),
+          });
+        });
+        const routineLabel = routineCount === 1 ? "rutina" : "rutinas";
+        const exerciseLabel = totalExerciseCount === 1 ? "ejercicio" : "ejercicios";
+        const messageParts = [
+          (routineCount === 1 ? "Se añadirá " : "Se añadirán ") +
+            routineCount + " " + routineLabel + " con " +
+            totalExerciseCount + " " + exerciseLabel + " en total.",
+        ];
+        if (newExerciseCount) {
+          messageParts.push(
+            (newExerciseCount === 1 ? "Se añadirá " : "Se añadirán ") +
+              newExerciseCount + " " +
+              (newExerciseCount === 1 ? "ejercicio nuevo" : "ejercicios nuevos") +
+              " a tu biblioteca.",
+          );
+        } else if (payload.exercises?.length) {
+          messageParts.push("Los ejercicios incluidos ya están en tu biblioteca.");
+        }
         setConfirmation({
-          title: "Añadir ejercicios",
-          message: `Se añadirán ${routineCount} ${routineCount === 1 ? "rutina" : "rutinas"} a ProFit, con ${exerciseCount} ${exerciseCount === 1 ? "ejercicio" : "ejercicios"}. ¿Quieres continuar?`,
+          title: "Importar rutinas",
+          message: messageParts.join(" ") + " ¿Quieres continuar?",
           confirmLabel: "Añadir",
           icon: "dumbbell",
           buttonVariant: "primary",
           onConfirm: () => {
-            if (payload.exercises?.length) {
+            if (exercisesToMerge.length) {
               setExercises((current) =>
-                mergeById(current, payload.exercises.map(normalizeExerciseData)),
+                mergeById(current, exercisesToMerge),
               );
             }
             setRoutineGroups((current) =>
               mergeRoutineGroups(
                 current,
-                payload.routines.map((routine) => routine.group),
+                routinesToImport.map((routine) => routine.group),
               ),
             );
-            setRoutines((current) => mergeById(current, payload.routines));
-            setSelectedRoutine(payload.routines[0]);
+            setRoutines((current) => mergeById(current, routinesToImport));
+            setSelectedRoutine(routinesToImport[0]);
             setTab("training");
             setToast("Rutina importada");
           },
@@ -10930,7 +11055,7 @@ function App() {
       }
     };
     const readRoutineHash = () => {
-      const match = window.location.hash.match(/^#routine-plan=([A-Za-z0-9_-]+)$/);
+      const match = window.location.hash.match(/^#routine-plan=([A-Za-z0-9_$-]+)$/);
       if (match) importRoutinePlan(match[1]);
     };
     window.addEventListener("hashchange", readRoutineHash);
@@ -11747,6 +11872,7 @@ function App() {
         : [...current, savedRoutine],
     );
     setFormRoutine(undefined);
+    setFormRoutineGroup(undefined);
     setTab("training");
     setSelectedRoutine(savedRoutine);
     setToast(
@@ -11783,11 +11909,15 @@ function App() {
   };
   const deleteRoutineGroup = (group) => {
     const groupName = String(group?.name || "").trim();
-    if (!groupName) return;
-    const matchesGroup = (value) =>
-      String(value || "")
-        .trim()
-        .toLocaleLowerCase("es") === groupName.toLocaleLowerCase("es");
+    const isUngrouped = !groupName;
+    const displayName = groupName || "(Sin grupo)";
+    const matchesGroup = (value) => {
+      const valueName = String(value || "").trim();
+      return isUngrouped
+        ? !valueName
+        : valueName.toLocaleLowerCase("es") ===
+            groupName.toLocaleLowerCase("es");
+    };
     const attachedRoutines = routines.filter((routine) =>
       matchesGroup(routine.group),
     );
@@ -11796,8 +11926,8 @@ function App() {
     askToConfirm({
       title: "Eliminar grupo",
       message: attachedRoutines.length
-        ? `Se eliminará «${groupName}» y sus ${routineCountLabel}. Las sesiones ya guardadas se conservarán.`
-        : `Se eliminará «${groupName}». Las sesiones ya guardadas se conservarán.`,
+        ? `Se eliminará «${displayName}» y sus ${routineCountLabel}. Las sesiones ya guardadas se conservarán.`
+        : `Se eliminará «${displayName}». Las sesiones ya guardadas se conservarán.`,
       confirmLabel: attachedRoutines.length
         ? "Eliminar grupo y rutinas"
         : "Eliminar grupo",
@@ -11817,7 +11947,7 @@ function App() {
         setToast(
           attachedRoutines.length
             ? `Grupo y ${routineCountLabel} eliminados`
-            : "Grupo eliminado",
+            : `Grupo «${displayName}» eliminado`,
         );
       },
     });
@@ -12584,9 +12714,19 @@ function App() {
         onOpen={setSelectedExercise}
         onCreateExercise={() => setFormExercise(null)}
         onCreateGroup={() => setRoutineGroupOpen(true)}
-        onCreateRoutine={() => setFormRoutine(null)}
+        onCreateRoutine={() => {
+          setFormRoutineGroup(undefined);
+          setFormRoutine(null);
+        }}
+        onCreateRoutineInGroup={(group) => {
+          setFormRoutineGroup(group.name || "");
+          setFormRoutine(null);
+        }}
         onOpenRoutine={setSelectedRoutine}
-        onEditRoutine={(routine) => setFormRoutine(routine)}
+        onEditRoutine={(routine) => {
+          setFormRoutineGroup(undefined);
+          setFormRoutine(routine);
+        }}
         onShareRoutine={shareRoutine}
         onShareRoutineGroup={shareRoutineGroup}
         onDeleteRoutine={deleteRoutine}
@@ -12803,6 +12943,7 @@ function App() {
             const routine =
               routines.find((item) => item.id === selectedRoutine.id) ||
               selectedRoutine;
+            setFormRoutineGroup(undefined);
             setFormRoutine(routine);
           }}
           onUpdate={updateRoutine}
@@ -12818,7 +12959,11 @@ function App() {
         <RoutineForm
           routine={formRoutine || undefined}
           groups={routineGroups}
-          onClose={() => setFormRoutine(undefined)}
+          fixedGroup={formRoutineGroup}
+          onClose={() => {
+            setFormRoutine(undefined);
+            setFormRoutineGroup(undefined);
+          }}
           onSave={saveRoutine}
         />
       )}
@@ -12846,6 +12991,7 @@ function App() {
           onFreeWorkout={() => startRoutine(null)}
           onCreateRoutine={() => {
             setWorkoutChooserOpen(false);
+            setFormRoutineGroup(undefined);
             setFormRoutine(null);
           }}
         />
