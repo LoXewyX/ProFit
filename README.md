@@ -14,6 +14,6 @@ The deployable files are written to `site/`. The build also copies the routine-l
 
 The Vite base is `/ProFit/`, so generated asset paths are suitable for the repository's GitHub Pages URL at `https://loxewyx.github.io/ProFit/`.
 
-The builder stores routines, groups, custom exercises, drafts, and settings in browser `localStorage`. Routine links point to the static `routine-link.html` entry in the ProFit web app. That page passes the plan to the Android app through the `profit://routine-plan/...` intent and falls back to the ProFit web app with the plan in its import hash.
+The builder stores routines, groups, custom exercises, drafts, and settings in browser `localStorage`. Routine links point to the static `routine-link.html` entry in the ProFit web app. The link uses a compact positional payload compressed with LZ-String, then passes it to the Android app through the `profit://routine-plan/...` intent or to the ProFit web app through its import hash. Previously generated Base64 links remain supported.
 
 Custom exercise media can be supplied as public image or video URLs. Files are referenced by URL rather than embedded in the intent, keeping shared routine links small. Custom exercises appear before the bundled library and can be edited or deleted from the exercise picker. Routine 1 is protected from deletion; the clear-data control resets the builder's saved content while leaving bundled exercises intact.

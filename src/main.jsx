@@ -5,6 +5,7 @@ import { getMuscleFocus, MuscleMap } from "../../../src/muscles.jsx";
 import { ExerciseThumb } from "../../../src/ExerciseMedia.jsx";
 import { exerciseDoseLabel, exerciseMuscleLine } from "../../../src/exercise-model.js";
 import { activateLanguage, translateText } from "../../../src/i18n.js";
+import { encodeRoutinePlan } from "../../../src/routine-link-codec.js";
 import "./style.css";
 
 const appUrl = "https://loxewyx.github.io/ProFit/";
@@ -401,15 +402,12 @@ function App() {
       routines: validRoutines,
       exercises: customExercises.filter((exercise) => usedCustomIds.has(exercise.id)),
     };
-    const bytes = new TextEncoder().encode(JSON.stringify(payload));
-    if (bytes.length > 48_000) {
+    const encoded = encodeRoutinePlan(payload);
+    if (new TextEncoder().encode(JSON.stringify(payload)).length > 48_000) {
       setToast(builderText.linkTooLarge);
       return "";
     }
-    let binary = "";
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    const encoded = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-    return `${appUrl}${routineLinkPath}?plan=${encoded}`;
+    return `${appUrl}${routineLinkPath}?p=${encoded}`;
   };
   const generateLink = () => {
     const url = createShareUrl();
