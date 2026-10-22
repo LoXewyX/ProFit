@@ -6,12 +6,27 @@
     <meta name="theme-color" content="#111412" />
     <title>Open routine · ProFit</title>
     <style>
-      :root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#111412;color:#edf1e9}*{box-sizing:border-box}body{min-height:100vh;min-height:100dvh;margin:0;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 0,#263123 0,transparent 58%),#111412}.card{width:min(100%,420px);padding:26px;border:1px solid #303831;border-radius:16px;background:#191e1a;box-shadow:0 24px 80px #0008}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;color:#edf1e9;font-size:17px;font-weight:750;letter-spacing:-.5px}.mark{display:grid;width:34px;height:34px;place-items:center;border-radius:10px;background:#d2f476;color:#1a2114}.mark svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.eyebrow{color:#a5b68c;font-size:10px;font-weight:750;letter-spacing:1px;text-transform:uppercase}.card h1{margin:8px 0;color:#edf1e9;font-size:23px;letter-spacing:-.6px}.card p{margin:0;color:#a4aea0;font-size:14px;line-height:1.55}.actions{display:grid;gap:9px;margin-top:22px}.button{min-height:46px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;border:1px solid #46543a;border-radius:10px;background:#d2f476;color:#1a2114;font-size:14px;font-weight:700;text-decoration:none}.button.secondary{border-color:#343c34;background:#20251f;color:#d6ddd2}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.error{display:none;margin-top:16px;color:#ef9a91;font-size:13px}
+      :root{--accent:#d2f476;--accent-ink:#1a2114;color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#111412;color:#edf1e9}*{box-sizing:border-box}body{min-height:100vh;min-height:100dvh;margin:0;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 0,#263123 0,transparent 58%),#111412}.card{width:min(100%,420px);padding:26px;border:1px solid #303831;border-radius:16px;background:#191e1a;box-shadow:0 24px 80px #0008}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;color:#edf1e9;font-size:17px;font-weight:750;letter-spacing:-.5px}.mark{display:grid;width:34px;height:34px;place-items:center;border-radius:10px;background:#d2f476;color:#1a2114}.mark svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.eyebrow{color:#a5b68c;font-size:10px;font-weight:750;letter-spacing:1px;text-transform:uppercase}.card h1{margin:8px 0;color:#edf1e9;font-size:23px;letter-spacing:-.6px}.card p{margin:0;color:#a4aea0;font-size:14px;line-height:1.55}.actions{display:grid;gap:9px;margin-top:22px}.button{min-height:46px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;border:1px solid #46543a;border-radius:10px;background:#d2f476;color:#1a2114;font-size:14px;font-weight:700;text-decoration:none}.button.secondary{border-color:#343c34;background:#20251f;color:#d6ddd2}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.error{display:none;margin-top:16px;color:#ef9a91;font-size:13px}
+
+      .brand-mark{display:flex;align-items:center;justify-content:center;gap:2px}
+      .brand-mark i{display:block;width:4px;border-radius:4px;background:var(--accent-ink);transform:skew(-18deg)}
+      .brand-mark i:nth-child(1){height:10px;opacity:.58}
+      .brand-mark i:nth-child(2){height:16px;opacity:.8}
+      .brand-mark i:nth-child(3){height:22px}
+      .brand-mark{background:transparent}
+      .brand-mark i{background:var(--accent)}
+      .brand{gap:10px;font-size:1rem}
+      .brand>span>span{color:var(--accent)}
+      .brand-mark{width:auto;height:23px;padding:0 3px;border-radius:0;background:transparent;transform:skew(-18deg)}
+      .brand-mark i{width:5px;transform:none;transform-origin:center bottom;animation:profit-logo-glow 2.8s ease-in-out infinite}
+      .brand-mark i:nth-child(1){height:11px;opacity:.55}
+      .brand-mark i:nth-child(2){height:18px;opacity:.8;animation-delay:.14s}
+      .brand-mark i:nth-child(3){height:23px;animation-delay:.28s}
     </style>
   </head>
   <body>
     <main class="card">
-      <div class="brand"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h4v10H4zM16 7h4v10h-4zM8 10h8M8 14h8" /></svg></span><span>pro<span style="color:#d2f476">fit</span></span></div>
+      <a class="brand" href="https://loxewyx.github.io/ProFit/" aria-label="ProFit"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>pro<span>fit</span></span></a>
       <span class="eyebrow" id="eyebrow">Routine link</span>
       <h1 id="title">Open this routine in ProFit</h1>
       <p id="description">Continue in the ProFit app to add this routine to your library.</p>
