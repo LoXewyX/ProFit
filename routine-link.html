@@ -29,7 +29,8 @@
       (() => {
         const appUrl = "https://loxewyx.github.io/ProFit/";
         const params = new URLSearchParams(location.search);
-        const plan = params.get("plan") || "";
+        // `p` is the compact LZ-String format; keep `plan` for older links.
+        const plan = (params.get("p") || params.get("plan") || "").replace(/ /g, "+");
         const copy = {
           es: ["Abriendo tu rutina", "Conectando con ProFit…", "Abrir ProFit", "Si tienes la app instalada, se abrirá automáticamente."],
           ca: ["S’està obrint la rutina", "S’està connectant amb ProFit…", "Obre ProFit", "Si tens l’app instal·lada, s’obrirà automàticament."],
