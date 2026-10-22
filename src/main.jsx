@@ -15,7 +15,6 @@ import {
 } from "./i18n.js";
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { decodeRoutinePlan } from "./routine-link-codec.js";
-const { default: exerciseLibrary } = await import("./exercise-library.json");
 import {
   buildMuscleLoad,
   getMuscleFocus,
@@ -390,6 +389,22 @@ const loadJson = (key, fallback) => {
     return fallback;
   }
 };
+
+// Load the selected locale alongside the bundled exercise catalogue before
+// the first render, so translated labels never flash in Spanish.
+const storedLanguage = loadJson("profit-language", "en");
+const explicitSystemLanguage = loadJson("profit-language-explicit-choice", false);
+const initialLanguagePreference =
+  storedLanguage === "system" && !explicitSystemLanguage
+    ? "en"
+    : ["system", "es", "ca", "en", "fr", "de", "it"].includes(storedLanguage)
+      ? storedLanguage
+      : "en";
+const [exerciseLibraryModule] = await Promise.all([
+  import("./exercise-library.json"),
+  activateLanguage(resolveLanguage(initialLanguagePreference)),
+]);
+const exerciseLibrary = exerciseLibraryModule.default;
 
 const makeExportFile = (name, content, type) => {
   const blob = new Blob([content], { type });
@@ -5468,9 +5483,12 @@ function ProfilePage({
               aria-label="Idioma de la aplicación"
             >
               <option value="system">Sistema</option>
-              <option value="es">Castellano</option>
-              <option value="ca">Català</option>
-              <option value="en">English</option>
+              <option value="es" translate="no">Español</option>
+              <option value="ca" translate="no">Català</option>
+              <option value="en" translate="no">English</option>
+              <option value="fr" translate="no">Français</option>
+              <option value="de" translate="no">Deutsch</option>
+              <option value="it" translate="no">Italiano</option>
             </select>
           </label>
           <SettingsSectionLabel
@@ -7965,16 +7983,16 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
                 choosePreview(file);
               }}
             />
-            <button
+            <Button
+              variant="quiet"
               type="button"
-              class="icon-button exercise-preview-choose"
+              className="exercise-preview-choose"
               title={translateText("Elegir imagen de vista previa")}
               aria-label={translateText("Elegir imagen de vista previa")}
               onClick={() => previewInput.current?.click()}
             >
-              <Icon name="upload" size={15} />
-              <span>{translateText("Elegir")}</span>
-            </button>
+              <Icon name="upload" size={14} /> Elegir
+            </Button>
           </div>
           <div class="exercise-preview-thumb">
             {previewFile ? (
@@ -10634,6 +10652,7 @@ function MeasureHistoryModal({
 }
 
 function App() {
+  const [, setLocaleRevision] = useState(0);
   const [tab, setTabState] = useState("home");
   const [pageTransition, setPageTransition] = useState(null);
   const [dashboardLayout, setDashboardLayout] = useState(loadDashboardLayout);
@@ -10859,13 +10878,12 @@ function App() {
       false,
     );
     if (saved === "system" && !hasExplicitSystemChoice) return "en";
-    return ["system", "es", "ca", "en"].includes(saved) ? saved : "en";
+    return ["system", "es", "ca", "en", "fr", "de", "it"].includes(saved) ? saved : "en";
   });
   const resolvedLanguage = resolveLanguage(language);
-  activateLanguage(resolvedLanguage);
   const chooseLanguage = (value) => {
     localStorage.setItem("profit-language-explicit-choice", JSON.stringify(true));
-    setLanguage(["system", "es", "ca", "en"].includes(value) ? value : "en");
+    setLanguage(["system", "es", "ca", "en", "fr", "de", "it"].includes(value) ? value : "en");
   };
   const [soundsMuted, setSoundsMuted] = useState(() =>
     Boolean(loadJson("profit-sounds-muted", false)),
@@ -11287,8 +11305,15 @@ function App() {
     localStorage.setItem("profit-theme", JSON.stringify(theme));
   }, [theme]);
   useEffect(() => {
+    let current = true;
+    activateLanguage(resolvedLanguage).then(() => {
+      if (current) setLocaleRevision((revision) => revision + 1);
+    });
     localStorage.setItem("profit-language", JSON.stringify(language));
-  }, [language]);
+    return () => {
+      current = false;
+    };
+  }, [language, resolvedLanguage]);
   useEffect(() => {
     document.documentElement.lang = resolvedLanguage;
     document.title =
@@ -12583,7 +12608,7 @@ function App() {
           if (data.profile.palette) setPalette(data.profile.palette);
           if (["light", "dark", "system"].includes(data.profile.theme))
             setTheme(data.profile.theme);
-          if (["system", "es", "ca", "en"].includes(data.profile.language)) {
+          if (["system", "es", "ca", "en", "fr", "de", "it"].includes(data.profile.language)) {
             localStorage.setItem(
               "profit-language-explicit-choice",
               JSON.stringify(true),
