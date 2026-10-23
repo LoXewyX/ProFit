@@ -158,6 +158,32 @@ export function intlLocale(language = activeLanguage) {
   return ({ ca: 'ca-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', es: 'es-ES' })[language] || 'en-US';
 }
 
+export function decimalSeparator(language = activeLanguage) {
+  return new Intl.NumberFormat(intlLocale(language), { minimumFractionDigits: 1 })
+    .formatToParts(1.1)
+    .find((part) => part.type === 'decimal')?.value || '.';
+}
+
+// Accept the separator shown for the active language and the alternate one,
+// while keeping the input itself as text so mobile keyboards can enter either.
+export function parseLocalizedDecimal(value) {
+  let normalized = String(value ?? '').trim().replace(/[\s\u00a0\u202f']/g, '');
+  if (!normalized) return Number.NaN;
+  const lastDot = normalized.lastIndexOf('.');
+  const lastComma = normalized.lastIndexOf(',');
+  if (lastDot >= 0 && lastComma >= 0) {
+    const decimalIndex = Math.max(lastDot, lastComma);
+    const integerPart = normalized.slice(0, decimalIndex).replace(/[.,]/g, '');
+    const fractionPart = normalized.slice(decimalIndex + 1).replace(/[.,]/g, '');
+    normalized = `${integerPart}.${fractionPart}`;
+  } else {
+    normalized = normalized.replace(',', '.');
+  }
+  return /^[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?$/i.test(normalized)
+    ? Number(normalized)
+    : Number.NaN;
+}
+
 export function translateText(value) {
   if (typeof value !== 'string' || !value) return value;
   value = value.replace(/\bCm\b/g, 'cm');

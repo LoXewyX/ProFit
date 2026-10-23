@@ -8,7 +8,9 @@ import {
 } from "preact/hooks";
 import {
   activateLanguage,
+  decimalSeparator,
   intlLocale,
+  parseLocalizedDecimal,
   registerBundledExerciseNames,
   resolveLanguage,
   translateText,
@@ -48,18 +50,98 @@ const RoutineLink = registerPlugin("RoutineLink");
 const HydrationReminder = registerPlugin("HydrationReminder");
 const WeighInReminder = registerPlugin("WeighInReminder");
 const ProteinReminder = registerPlugin("ProteinReminder");
+const ProgressPhotos = registerPlugin("ProgressPhotos");
 
 const today = () => new Date();
 const dateKey = (date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const kgToUnit = (value, unit) =>
-  unit === "lb" ? Number(value) * 2.20462 : Number(value);
+  unit === "lb" ? parseLocalizedDecimal(value) * 2.20462 : parseLocalizedDecimal(value);
 const unitToKg = (value, unit) =>
-  unit === "lb" ? Number(value) / 2.20462 : Number(value);
+  unit === "lb" ? parseLocalizedDecimal(value) / 2.20462 : parseLocalizedDecimal(value);
+const formatEditableDecimal = (value, maximumFractionDigits = 12) =>
+  value === "" || value === null || value === undefined
+    ? ""
+    : Number(value).toLocaleString(intlLocale(), {
+        useGrouping: false,
+        maximumFractionDigits,
+      });
 const formatMassValue = (value, unit = "kg") =>
   value === null || value === undefined || value === ""
     ? "—"
     : `${kgToUnit(value, unit).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${unit}`;
+const compressMeasurePhoto = async (file, highResolution = false) => {
+  if (!file?.type?.startsWith("image/"))
+    throw new Error("Elige un archivo de imagen válido.");
+  if (file.size > 25 * 1024 * 1024)
+    throw new Error("La imagen debe ocupar menos de 25 MB antes de comprimirla.");
+  let bitmap;
+  let fallbackUrl = "";
+  if (typeof createImageBitmap === "function") {
+    bitmap = await createImageBitmap(file);
+  } else {
+    fallbackUrl = URL.createObjectURL(file);
+    bitmap = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("No se pudo abrir la imagen."));
+      image.src = fallbackUrl;
+    }).finally(() => URL.revokeObjectURL(fallbackUrl));
+  }
+  const sourceWidth = bitmap.width || bitmap.naturalWidth;
+  const sourceHeight = bitmap.height || bitmap.naturalHeight;
+  const maxDimension = highResolution ? 1920 : 960;
+  const scale = Math.min(
+    1,
+    maxDimension / Math.max(sourceWidth, sourceHeight),
+  );
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+  canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+  const context = canvas.getContext("2d", { alpha: false });
+  if (!context) {
+    bitmap.close?.();
+    throw new Error("No se pudo preparar la imagen.");
+  }
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close?.();
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(
+      (blob) =>
+        blob
+          ? resolve(blob)
+          : reject(new Error("No se pudo comprimir la imagen.")),
+      "image/jpeg",
+      highResolution ? 0.88 : 0.72,
+    ),
+  );
+};
+const blobToDataUrl = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("No se pudo leer la imagen."));
+    reader.readAsDataURL(blob);
+  });
+const saveProgressPhotoToGallery = async (blob) => {
+  if (Capacitor.getPlatform() !== "android") {
+    throw new Error("Guardar fotos en Fotos/ProFit solo está disponible en Android.");
+  }
+  const dataUrl = await blobToDataUrl(blob);
+  return saveProgressPhotoDataUrl(dataUrl);
+};
+const saveProgressPhotoDataUrl = async (dataUrl) => {
+  if (Capacitor.getPlatform() !== "android") {
+    throw new Error("Guardar fotos en Fotos/ProFit solo está disponible en Android.");
+  }
+  const match = dataUrl.match(/^data:([^;]+);base64,([\s\S]+)$/);
+  if (!match) throw new Error("No se pudo preparar la foto para la galería.");
+  return ProgressPhotos.savePhoto({ data: match[2], mimeType: match[1] });
+};
+const dataUrlToBlob = async (value) => {
+  if (typeof value !== "string" || !value.startsWith("data:image/")) return null;
+  return (await fetch(value)).blob();
+};
 const weekStartKey = (date = today(), weekStartsOn = 1) => {
   const start = new Date(date);
   start.setHours(12, 0, 0, 0);
@@ -325,7 +407,7 @@ const fullDate = () =>
     month: "long",
   }).format(today());
 const uid = () => Math.random().toString(36).slice(2, 10);
-const cmToIn = (cm) => Number(cm || 0) / 2.54;
+const cmToIn = (cm) => parseLocalizedDecimal(cm || 0) / 2.54;
 const inToCm = (inches) => Number(inches || 0) * 2.54;
 const waterReminderIntervals = [15, 30, 45, 60, 90, 120, 150, 180, 210, 240];
 const weekdayNarrowLabel = (day) => {
@@ -392,14 +474,14 @@ const loadJson = (key, fallback) => {
 
 // Load the selected locale alongside the bundled exercise catalogue before
 // the first render, so translated labels never flash in Spanish.
-const storedLanguage = loadJson("profit-language", "en");
+const storedLanguage = loadJson("profit-language", "system");
 const explicitSystemLanguage = loadJson("profit-language-explicit-choice", false);
 const initialLanguagePreference =
-  storedLanguage === "system" && !explicitSystemLanguage
-    ? "en"
+  !explicitSystemLanguage
+    ? "system"
     : ["system", "es", "ca", "en", "fr", "de", "it"].includes(storedLanguage)
       ? storedLanguage
-      : "en";
+      : "system";
 const [exerciseLibraryModule] = await Promise.all([
   import("./exercise-library.json"),
   activateLanguage(resolveLanguage(initialLanguagePreference)),
@@ -3382,7 +3464,6 @@ function RoutineDetail({
   const muscleFilters = getExerciseMuscleFilters(exercises);
   const availableExercises = exercises.filter(
     (exercise) =>
-      !routine.exercises.includes(exercise.id) &&
       exerciseMatchesMuscleFilter(exercise, muscleFilter) &&
       matchesSearchQuery(query, exerciseSearchValues(exercise)),
   );
@@ -3572,48 +3653,69 @@ function RoutineDetail({
               {/* Solo esta zona tiene scroll vertical */}
               <div className="routine-picker-results">
                 {matches.length > 0 ? (
-                  matches.map((exercise) => (
-                    <article className="routine-picker-row" key={exercise.id}>
-                      <button
-                        type="button"
-                        className="exercise-preview-trigger"
-                        onClick={() => setPreview(exercise)}
-                      >
-                        <span className="routine-exercise-visual">
-                          {exercise.poster ||
-                          exercise.media ||
-                          exercise.mediaAssetId ||
-                          exercise.previewAssetId ? (
-                            <ExerciseThumb exercise={exercise} />
-                          ) : (
-                            <MuscleMap
-                              muscles={getMuscleFocus(exercise)}
-                              compact
-                            />
-                          )}
-                        </span>
-
-                        <span className="routine-exercise-copy">
-                          <strong>{exercise.name}</strong>
-                          <span>
-                            {exerciseMuscleLine(exercise)} ·{" "}
-                            {exercise.equipment}
+                  matches.map((exercise) => {
+                    const isAdded = routine.exercises.includes(exercise.id);
+                    return (
+                      <article className="routine-picker-row" key={exercise.id}>
+                        <button
+                          type="button"
+                          className="exercise-preview-trigger"
+                          onClick={() => setPreview(exercise)}
+                        >
+                          <span className="routine-exercise-visual">
+                            {exercise.poster ||
+                            exercise.media ||
+                            exercise.mediaAssetId ||
+                            exercise.previewAssetId ? (
+                              <ExerciseThumb exercise={exercise} />
+                            ) : (
+                              <MuscleMap
+                                muscles={getMuscleFocus(exercise)}
+                                compact
+                              />
+                            )}
                           </span>
-                          <small>{exerciseDoseLabel(exercise)}</small>
-                        </span>
-                      </button>
 
-                      <button
-                        type="button"
-                        className="icon-button routine-add-button"
-                        onClick={() => add(exercise)}
-                        aria-label={`Añadir ${exercise.name} a la rutina`}
-                        title={`Añadir ${exercise.name}`}
-                      >
-                        <Icon name="plus" size={15} />
-                      </button>
-                    </article>
-                  ))
+                          <span className="routine-exercise-copy">
+                            <strong>{exercise.name}</strong>
+                            <span>
+                              {exerciseMuscleLine(exercise)} ·{" "}
+                              {exercise.equipment}
+                            </span>
+                            <small>{exerciseDoseLabel(exercise)}</small>
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`icon-button routine-add-button ${isAdded ? "is-added" : ""}`}
+                          onClick={() =>
+                            isAdded ? remove(exercise.id) : add(exercise)
+                          }
+                          aria-label={
+                            isAdded
+                              ? `${translateText("Quitar de la rutina")}: ${exercise.name}`
+                              : `${translateText("Añadir a la rutina")}: ${exercise.name}`
+                          }
+                          title={
+                            isAdded
+                              ? translateText("Quitar de la rutina")
+                              : translateText("Añadir a la rutina")
+                          }
+                          aria-pressed={isAdded}
+                        >
+                          {isAdded ? (
+                            <>
+                              <Icon name="check" size={14} />
+                              <span>{translateText("Añadido")}</span>
+                            </>
+                          ) : (
+                            <Icon name="plus" size={15} />
+                          )}
+                        </button>
+                      </article>
+                    );
+                  })
                 ) : (
                   <div className="empty-inline">
                     No hay ejercicios que coincidan con esos filtros.
@@ -4471,6 +4573,7 @@ function ProfilePage({
   measures,
   onAddMeasure,
   onManageMeasures,
+  onManagePhotos,
   onManageDashboardLayout,
   onEditMeasure,
   onDeleteMeasure,
@@ -4525,6 +4628,8 @@ function ProfilePage({
   onWeightReminder,
   weightReminderTime,
   onWeightReminderTime,
+  highResolutionProgressPhotos,
+  onHighResolutionProgressPhotos,
 }) {
   const avatarInput = useRef(null);
   const backupInput = useRef(null);
@@ -4725,25 +4830,30 @@ function ProfilePage({
           <SectionHeading
             eyebrow="CUERPO"
             title="Medidas"
-            action={
-              <div class="measure-heading-actions">
-                <button
-                  type="button"
-                  class="text-button"
-                  onClick={onManageMeasures}
-                >
-                  <Icon name="history" size={14} /> Historial
-                </button>
-                <button
-                  type="button"
-                  class="text-button"
-                  onClick={onAddMeasure}
-                >
-                  <Icon name="plus" size={14} /> Añadir
-                </button>
-              </div>
-            }
           />
+          <div class="measure-heading-actions">
+            <button
+              type="button"
+              class="text-button"
+              onClick={onManagePhotos}
+            >
+              <Icon name="image" size={14} /> Fotos
+            </button>
+            <button
+              type="button"
+              class="text-button"
+              onClick={onManageMeasures}
+            >
+              <Icon name="history" size={14} /> Historial
+            </button>
+            <button
+              type="button"
+              class="text-button"
+              onClick={onAddMeasure}
+            >
+              <Icon name="plus" size={14} /> Añadir
+            </button>
+          </div>
           {currentMeasure ? (
             <>
               <div class="measure-weight">
@@ -5513,8 +5623,25 @@ function ProfilePage({
           </div>
           <SettingsSectionLabel
             label="DATOS Y PRIVACIDAD"
-            description="Exporta o importa tu progreso; la información se queda en este dispositivo."
+            description="Gestiona las copias de seguridad y el almacenamiento local de tus fotos."
           />
+          <div class="progress-photo-settings">
+            <label class="progress-photo-highres">
+              <input
+                type="checkbox"
+                checked={highResolutionProgressPhotos}
+                onChange={(event) =>
+                  onHighResolutionProgressPhotos(event.currentTarget.checked)
+                }
+              />
+              <span>
+                <strong>Usar fotos de alta resolución</strong>
+                <small>
+                  La resolución estándar ahorra espacio; la alta resolución ocupa más.
+                </small>
+              </span>
+            </label>
+          </div>
           <div class="data-management">
             <div>
               <strong>Copia de seguridad</strong>
@@ -6278,6 +6405,491 @@ function CategoryBalance({ workouts, exercises }) {
   );
 }
 
+function MeasurePhotoAsset({
+  assetId,
+  photoUri,
+  alt,
+  className = "",
+  onMissing,
+}) {
+  const [source, setSource] = useState("");
+  const [sourceRevision, setSourceRevision] = useState(0);
+  const onMissingRef = useRef(onMissing);
+  onMissingRef.current = onMissing;
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible")
+        setSourceRevision((revision) => revision + 1);
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshWhenVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshWhenVisible);
+    };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    let objectUrl = "";
+    setSource("");
+    if (photoUri && Capacitor.getPlatform() === "android") {
+      ProgressPhotos.readPhoto({ uri: photoUri })
+        .then(({ data, mimeType }) => {
+          if (!active || !data) return;
+          setSource(`data:${mimeType || "image/jpeg"};base64,${data}`);
+        })
+        .catch(() => {
+          if (!active) return;
+          ProgressPhotos.photoExists({ uri: photoUri })
+            .then(({ exists }) => {
+              if (active && !exists) onMissingRef.current?.();
+            })
+            .catch(() => {});
+        });
+    } else if (assetId) {
+      getExerciseAsset(assetId)
+        .then((blob) => {
+          if (!active || !blob) return;
+          objectUrl = URL.createObjectURL(blob);
+          setSource(objectUrl);
+        })
+        .catch(() => {});
+    }
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [assetId, photoUri, sourceRevision]);
+  return source ? (
+    <img className={className} src={source} alt={alt} loading="lazy" />
+  ) : (
+    <div className={`${className} measure-photo-loading`} aria-label={alt}>
+      <Icon name="image" size={22} />
+    </div>
+  );
+}
+
+function MeasurePhotoDatePickerModal({
+  photos,
+  selectedDate,
+  weekStartsOn,
+  onSelectDate,
+  onClose,
+  title = "Elegir fecha de las fotos",
+  hint = "Selecciona un día marcado para ver sus fotos.",
+  itemLabel = "Fotos",
+  className = "measure-photo-date-modal",
+}) {
+  const [month, setMonth] = useState(() => {
+    const latestDate = photos.reduce(
+      (latest, record) => (record.date > latest ? record.date : latest),
+      "",
+    );
+    const source = selectedDate || latestDate || dateKey(today());
+    const date = new Date(`${source}T12:00:00`);
+    return new Date(date.getFullYear(), date.getMonth(), 1, 12);
+  });
+  const photosByDate = new Map();
+  photos.forEach((photo) =>
+    photosByDate.set(photo.date, (photosByDate.get(photo.date) || 0) + 1),
+  );
+  const offset =
+    (month.getDay() - weekStartsOn + 7) % 7;
+  const daysInMonth = new Date(
+    month.getFullYear(),
+    month.getMonth() + 1,
+    0,
+  ).getDate();
+  const weekdayLabels = Array.from({ length: 7 }, (_, index) =>
+    weekdayNarrowLabel((weekStartsOn + index) % 7),
+  );
+  return (
+    <Modal
+      title={translateText(title)}
+      onClose={onClose}
+      className={className}
+    >
+      <div className="measure-photo-date-picker">
+        <div className="measure-photo-month-nav">
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() =>
+              setMonth((value) =>
+                new Date(value.getFullYear(), value.getMonth() - 1, 1, 12),
+              )
+            }
+            aria-label={translateText("Mes anterior")}
+          >
+            <Icon name="chevron" size={16} className="calendar-chevron-back" />
+          </button>
+          <strong>
+            {month.toLocaleDateString(intlLocale(), {
+              month: "long",
+              year: "numeric",
+            })}
+          </strong>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() =>
+              setMonth((value) =>
+                new Date(value.getFullYear(), value.getMonth() + 1, 1, 12),
+              )
+            }
+            aria-label={translateText("Mes siguiente")}
+          >
+            <Icon name="chevron" size={16} />
+          </button>
+        </div>
+        <div className="measure-photo-calendar-grid" role="grid">
+          {weekdayLabels.map((label, index) => (
+            <span className="measure-photo-weekday" key={`weekday-${index}`}>
+              {label}
+            </span>
+          ))}
+          {Array.from({ length: offset }, (_, index) => (
+            <span
+              className="measure-photo-calendar-blank"
+              key={`blank-${index}`}
+              aria-hidden="true"
+            />
+          ))}
+          {Array.from({ length: daysInMonth }, (_, index) => {
+            const day = index + 1;
+            const key = dateKey(
+              new Date(month.getFullYear(), month.getMonth(), day, 12),
+            );
+            const count = photosByDate.get(key) || 0;
+            return (
+              <button
+                type="button"
+                role="gridcell"
+                className={`measure-photo-calendar-day ${count ? "has-photos" : ""} ${key === selectedDate ? "selected" : ""}`}
+                key={key}
+                disabled={!count}
+                aria-label={`${dateLabel(key, { day: "numeric", month: "long", year: "numeric" })}${count ? `, ${count} ${translateText(itemLabel)}` : ""}`}
+                aria-pressed={key === selectedDate}
+                onClick={() => onSelectDate(key)}
+              >
+                <span>{day}</span>
+                {count > 1 && <small>{count}</small>}
+                {count === 1 && <i aria-hidden="true" />}
+              </button>
+            );
+          })}
+        </div>
+        <p className="measure-photo-date-hint">
+          {translateText(hint)}
+        </p>
+      </div>
+    </Modal>
+  );
+}
+
+function MeasurePhotoProgressModal({
+  measures,
+  initialPhotoId = "",
+  unit,
+  heightUnit = "cm",
+  weekStartsOn = 1,
+  onClose,
+  onAddMeasure,
+  onEditMeasure,
+  onDeletePhoto,
+  onMissingPhoto,
+}) {
+  const photos = measures
+    .filter((measure) => measure.photoUri || measure.photoAssetId)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const latest = photos.at(-1);
+  const initialPhoto = photos.find((photo) => photo.id === initialPhotoId);
+  const [selectedDate, setSelectedDate] = useState(initialPhoto?.date || latest?.date || "");
+  const [selectedId, setSelectedId] = useState(() => {
+    if (initialPhoto) return initialPhoto.id;
+    const matches = photos.filter((photo) => photo.date === latest?.date);
+    return matches.length === 1 ? matches[0].id : "";
+  });
+  useEffect(() => {
+    if (!selectedId || photos.some((photo) => photo.id === selectedId)) return;
+    const next = photos.find((photo) => photo.date === selectedDate) || photos.at(-1);
+    setSelectedId(next?.id || "");
+    setSelectedDate(next?.date || "");
+  }, [photos, selectedDate, selectedId]);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState(null);
+  const swipeStart = useRef(null);
+  const photoDeletePrompt = useMemo(
+    () => ({
+      title: translateText("Eliminar foto de progreso"),
+      message: translateText(
+        "La foto se eliminará y no se podrá recuperar. Solo se eliminará la foto; los datos del pesaje se conservarán.",
+      ),
+      confirmLabel: translateText("Eliminar foto"),
+    }),
+    [],
+  );
+  const photosOnDate = photos.filter((photo) => photo.date === selectedDate);
+  const selectedIndex = photos.findIndex((photo) => photo.id === selectedId);
+  const selectedPhoto = selectedIndex >= 0 ? photos[selectedIndex] : null;
+  const selectedMetrics = selectedPhoto
+    ? [
+        selectedPhoto.bodyFat != null && [translateText("Grasa corporal"), `${selectedPhoto.bodyFat}%`],
+        selectedPhoto.muscleMass != null && [translateText("Masa muscular"), formatMassValue(selectedPhoto.muscleMass, unit)],
+        selectedPhoto.boneMass != null && [translateText("Masa ósea"), formatMassValue(selectedPhoto.boneMass, unit)],
+        selectedPhoto.water != null && [translateText("Agua corporal"), `${selectedPhoto.water}%`],
+        selectedPhoto.height != null && [translateText("Altura"), `${(heightUnit === "in" ? cmToIn(selectedPhoto.height) : selectedPhoto.height).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`],
+        selectedPhoto.waist != null && [translateText("Cintura"), `${(heightUnit === "in" ? cmToIn(selectedPhoto.waist) : selectedPhoto.waist).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`],
+        selectedPhoto.chest != null && [translateText("Pecho"), `${(heightUnit === "in" ? cmToIn(selectedPhoto.chest) : selectedPhoto.chest).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`],
+      ].filter(Boolean)
+    : [];
+  const changePhoto = (direction) => {
+    if (!photos.length) return;
+    const nextIndex =
+      (Math.max(selectedIndex, 0) + direction + photos.length) % photos.length;
+    const next = photos[nextIndex];
+    setSelectedId(next.id);
+    setSelectedDate(next.date);
+  };
+  const chooseDate = (date) => {
+    const matches = photos.filter((photo) => photo.date === date);
+    setSelectedDate(date);
+    setSelectedId(matches.length === 1 ? matches[0].id : "");
+    setDatePickerOpen(false);
+  };
+  const confirmDeletePhoto = async () => {
+    const target = photoToDelete;
+    if (!target) return;
+    const deleted = await onDeletePhoto(target);
+    if (deleted === false) return;
+    const index = photos.findIndex((photo) => photo.id === target.id);
+    const remaining = photos.filter((photo) => photo.id !== target.id);
+    setPhotoToDelete(null);
+    if (!remaining.length) {
+      setSelectedId("");
+      setSelectedDate("");
+      return;
+    }
+    const next = remaining[Math.min(Math.max(index - 1, 0), remaining.length - 1)];
+    setSelectedId(next.id);
+    setSelectedDate(next.date);
+  };
+  return (
+    <>
+      <Modal
+        title="Fotos de progreso"
+        onClose={onClose}
+        wide
+        className="measure-photo-gallery-modal"
+      >
+        <div className="measure-photo-progress">
+          <div className="measure-photo-gallery-heading">
+            <div>
+              <div className="eyebrow">
+                {translateText("Evolución corporal").toLocaleUpperCase(intlLocale())}
+              </div>
+              <h2>{translateText("Fotos de progreso")}</h2>
+            </div>
+            <div className="measure-photo-toolbar">
+              <Button
+                type="button"
+                variant="quiet"
+                className="measure-photo-date-button"
+                disabled={!photos.length}
+                onClick={() => setDatePickerOpen(true)}
+              >
+                <Icon name="calendar" size={15} />
+                {selectedDate
+                  ? dateLabel(selectedDate, {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })
+                  : translateText("Elegir fecha")}
+              </Button>
+              {selectedPhoto && (
+                <div className="measure-photo-toolbar-actions">
+                  <span>
+                    {selectedIndex + 1} / {photos.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    onClick={() => onEditMeasure(selectedPhoto)}
+                    aria-label={translateText("Editar detalles del pesaje")}
+                    title={translateText("Editar detalles del pesaje")}
+                  >
+                    <Icon name="edit" size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button danger"
+                    onClick={() => setPhotoToDelete(selectedPhoto)}
+                    aria-label={translateText("Eliminar foto")}
+                    title={translateText("Eliminar foto")}
+                  >
+                    <Icon name="trash" size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          {photos.length ? (
+            <>
+              {photosOnDate.length > 1 && !selectedPhoto && (
+                <section className="measure-photo-date-choices">
+                  <strong>
+                    {translateText("Elige una foto de este día")} · {photosOnDate.length}
+                  </strong>
+                  <div className="measure-photo-choice-list">
+                    {photosOnDate.map((photo, index) => (
+                      <button
+                        type="button"
+                        className="measure-photo-choice"
+                        key={photo.id}
+                        onClick={() => setSelectedId(photo.id)}
+                      >
+                        <MeasurePhotoAsset
+                          assetId={photo.photoAssetId}
+                          photoUri={photo.photoUri}
+                          alt={`${translateText("Foto de progreso")} ${index + 1}`}
+                          className="measure-photo-choice-image"
+                          onMissing={() => onMissingPhoto?.(photo)}
+                        />
+                        <span>{index + 1}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {selectedPhoto ? (
+                <article
+                  className="measure-photo-viewer"
+                  onPointerDown={(event) => {
+                    event.currentTarget.setPointerCapture?.(event.pointerId);
+                    swipeStart.current = event.clientX;
+                  }}
+                  onPointerUp={(event) => {
+                    const start = swipeStart.current;
+                    swipeStart.current = null;
+                    const delta = event.clientX - (start ?? event.clientX);
+                    if (start != null && Math.abs(delta) > 48)
+                      changePhoto(delta < 0 ? 1 : -1);
+                  }}
+                  onPointerCancel={() => { swipeStart.current = null; }}
+                  onLostPointerCapture={() => { swipeStart.current = null; }}
+                >
+                  <div className="measure-photo-viewer-image-wrap">
+                    {photos.length > 1 && (
+                      <span className="measure-photo-image-count">
+                        {selectedIndex + 1} / {photos.length}
+                      </span>
+                    )}
+                    {photos.length > 1 && (
+                      <button
+                        type="button"
+                        className="measure-photo-nav previous"
+                        onClick={() => changePhoto(-1)}
+                        aria-label={translateText("Foto anterior")}
+                      >
+                        <Icon name="chevron" size={19} className="calendar-chevron-back" />
+                      </button>
+                    )}
+                    <MeasurePhotoAsset
+                      assetId={selectedPhoto.photoAssetId}
+                      photoUri={selectedPhoto.photoUri}
+                      alt={`${translateText("Foto de progreso")}: ${dateLabel(selectedPhoto.date)}, ${formatMassValue(selectedPhoto.weight, unit)}`}
+                      className="measure-photo-viewer-image"
+                      onMissing={() => onMissingPhoto?.(selectedPhoto)}
+                    />
+                    {photos.length > 1 && (
+                      <button
+                        type="button"
+                        className="measure-photo-nav next"
+                        onClick={() => changePhoto(1)}
+                        aria-label={translateText("Foto siguiente")}
+                      >
+                        <Icon name="chevron" size={19} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="measure-photo-viewer-details">
+                    <div className="measure-photo-main-stats">
+                      <span className="measure-photo-date-label">
+                        {dateLabel(selectedPhoto.date, {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <div className="measure-photo-weight">
+                        <span>{translateText("Peso")}</span>
+                        <strong>{formatMassValue(selectedPhoto.weight, unit)}</strong>
+                      </div>
+                    </div>
+                    <div className="measure-photo-metric-list">
+                      {selectedMetrics.length ? selectedMetrics.map(([label, value]) => (
+                        <span className="measure-photo-metric-chip" key={label}>
+                          <small>{label}</small><strong>{value}</strong>
+                        </span>
+                      )) : (
+                        <span className="measure-photo-metric-empty">
+                          {translateText("Sin composición adicional")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ) : photosOnDate.length === 1 ? null : (
+                <div className="measure-photo-empty measure-photo-pick-hint">
+                  <span><Icon name="image" size={22} /></span>
+                  <strong>{translateText("Selecciona una foto para verla")}</strong>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="measure-photo-empty">
+              <span><Icon name="image" size={22} /></span>
+              <strong>{translateText("Aún no hay fotos de progreso")}</strong>
+              <small>
+                {translateText(
+                  "Añade una foto al guardar un pesaje para seguir tu evolución.",
+                )}
+              </small>
+              <Button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onAddMeasure();
+                }}
+              >
+                <Icon name="plus" size={15} /> {translateText("Añadir pesaje")}
+              </Button>
+            </div>
+          )}
+        </div>
+      </Modal>
+      {datePickerOpen && (
+        <MeasurePhotoDatePickerModal
+          photos={photos}
+          selectedDate={selectedDate}
+          weekStartsOn={weekStartsOn}
+          onSelectDate={chooseDate}
+          onClose={() => setDatePickerOpen(false)}
+        />
+      )}
+      {photoToDelete && (
+        <ConfirmModal
+          className="measure-photo-delete-confirm"
+          confirmation={photoDeletePrompt}
+          onCancel={() => setPhotoToDelete(null)}
+          onConfirm={confirmDeletePhoto}
+        />
+      )}
+    </>
+  );
+}
+
 const bodyMeasureSeries = [
   { id: "weight", label: "Peso", unit: "kg", color: "#b9dc74" },
   { id: "muscleMass", label: "Masa muscular", unit: "kg", color: "#64c9cf" },
@@ -6531,10 +7143,15 @@ function Modal({
   className = "",
 }) {
   const onCloseRef = useRef(onClose);
+  const backdropRef = useRef(null);
   onCloseRef.current = onClose;
   useEffect(() => {
-    const handle = (event) =>
-      dismissible && event.key === "Escape" && onCloseRef.current?.();
+    const handle = (event) => {
+      if (!dismissible || event.key !== "Escape") return;
+      const stack = document.querySelectorAll(".modal-backdrop");
+      if (stack[stack.length - 1] !== backdropRef.current) return;
+      onCloseRef.current?.();
+    };
     window.addEventListener("keydown", handle);
     openModalCount += 1;
     document.body.classList.add("modal-open");
@@ -6546,6 +7163,7 @@ function Modal({
   }, []);
   return (
     <div
+      ref={backdropRef}
       class={`modal-backdrop ${className}`}
       onClick={(event) =>
         dismissible && event.target === event.currentTarget && onClose()
@@ -6575,13 +7193,17 @@ function Modal({
   );
 }
 
-function ConfirmModal({ confirmation, onCancel, onConfirm }) {
+function ConfirmModal({ confirmation, onCancel, onConfirm, className = "" }) {
   useEffect(() => {
     if (confirmation) playWarningSound();
   }, [confirmation]);
   if (!confirmation) return null;
   return (
-    <Modal title={confirmation.title} onClose={onCancel}>
+    <Modal
+      title={confirmation.title}
+      onClose={onCancel}
+      className={`confirmation-layer ${className}`.trim()}
+    >
       <div class="confirm-modal-content">
         <span class="confirm-modal-icon">
           <Icon name={confirmation.icon || "trash"} size={20} />
@@ -7208,14 +7830,17 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
   const weightDraftKey = (exerciseIndex, setIndex) =>
     `${exerciseIndex}:${setIndex}`;
   const displayedWeight = (weight) => {
-    if (unit !== "lb") return String(Number(weight) || 0);
-    return String(Math.round((Number(weight) || 0) * 2.20462 * 10) / 10);
+    const value = Number(weight) || 0;
+    return formatEditableDecimal(
+      unit === "lb" ? value * 2.20462 : value,
+      unit === "lb" ? 1 : 6,
+    );
   };
   const commitWeightDraft = (exerciseIndex, setIndex) => {
     const key = weightDraftKey(exerciseIndex, setIndex);
     const draft = weightDrafts[key];
     if (draft === undefined) return;
-    const parsed = Number(String(draft).replace(",", "."));
+    const parsed = parseLocalizedDecimal(draft);
     if (String(draft).trim() !== "" && Number.isFinite(parsed) && parsed >= 0) {
       updateSet(
         exerciseIndex,
@@ -7271,11 +7896,17 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
               return {
                 ...(tracksSets
                   ? { ...entry, restSeconds: safeRestSeconds(restSeconds) }
-                  : withoutRest),
+                  : {
+                      ...withoutRest,
+                      activityValue:
+                        entry.activityValue == null
+                          ? null
+                          : parseLocalizedDecimal(entry.activityValue),
+                    }),
                 sets: entry.sets.map((set, setIndex) => {
                 const draft =
                   weightDrafts[weightDraftKey(exerciseIndex, setIndex)];
-                const parsed = Number(String(draft ?? "").replace(",", "."));
+                const parsed = parseLocalizedDecimal(draft);
                 const hasValidDraft =
                   draft !== undefined &&
                   String(draft).trim() !== "" &&
@@ -7401,10 +8032,11 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
                     <label>
                       Peso ({unit})
                       <input
-                        type="number"
+                        type="text"
                         min="0"
                         step="any"
                         inputMode="decimal"
+                        placeholder={`0${decimalSeparator()}0`}
                         value={
                           weightDrafts[weightDraftKey(exerciseIndex, setIndex)] ??
                           displayedWeight(set.weight)
@@ -7442,11 +8074,11 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
                   <label>
                     Tiempo (min)
                     <input
-                      type="number"
+                      type="text"
                       min="0"
                       step="1"
                       inputMode="decimal"
-                      placeholder={String(definition?.duration || "")}
+                      placeholder={formatEditableDecimal(definition?.duration || "")}
                       value={entry.activityValue ?? ""}
                       onInput={(event) =>
                         setForm((current) => ({
@@ -7458,7 +8090,7 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
                                   activityValue:
                                     event.currentTarget.value === ""
                                       ? null
-                                      : Number(event.currentTarget.value) || 0,
+                                      : event.currentTarget.value,
                                 }
                               : item,
                           ),
@@ -8651,15 +9283,21 @@ function WorkoutModal({
   );
   const shownPickerExercises = filteredPickerExercises.slice(0, pickerCount);
   const parseSessionDecimal = (value) => {
-    const normalized = String(value ?? "").trim().replace(",", ".");
-    return normalized === "" ? 0 : Number(normalized);
+    const parsed = parseLocalizedDecimal(value);
+    return Number.isNaN(parsed) ? (String(value ?? "").trim() ? Number.NaN : 0) : parsed;
   };
   const update = (exerciseId, index, key, value) => {
-    const numericValue =
-      key === "weight" ? parseSessionDecimal(value) : Number(value);
     const selectedExercise = exercises.find(
       (exercise) => exercise.id === exerciseId,
     );
+    const isTimedActivity =
+      key === "reps" &&
+      !exerciseTracksSets(selectedExercise) &&
+      !exerciseTracksReps(selectedExercise);
+    const numericValue =
+      key === "weight" || isTimedActivity
+        ? parseSessionDecimal(value)
+        : Number(value);
     const count = exerciseTracksSets(selectedExercise)
       ? setCounts[exerciseId] || selectedExercise?.sets || 3
       : 1;
@@ -8668,7 +9306,7 @@ function WorkoutModal({
       count > 1 &&
       Array.from({ length: count - 1 }, (_, rowIndex) => rowIndex + 1).every(
         (rowIndex) =>
-          (key === "weight"
+          (key === "weight" || isTimedActivity
             ? parseSessionDecimal(sets[exerciseId]?.[rowIndex]?.[key])
             : Number(sets[exerciseId]?.[rowIndex]?.[key] || 0)) === 0,
       );
@@ -8680,7 +9318,7 @@ function WorkoutModal({
       );
     setSets((current) => {
       const rows = { ...(current[exerciseId] || {}) };
-      const nextValue = key === "weight" ? String(value) : numericValue;
+      const nextValue = key === "weight" || isTimedActivity ? String(value) : numericValue;
       rows[index] = { ...(rows[index] || {}), [key]: nextValue };
       if (shouldKeepLinked) {
         for (let rowIndex = 1; rowIndex < count; rowIndex += 1)
@@ -9122,7 +9760,7 @@ function WorkoutModal({
           trackReps: tracksReps,
           activityComplete,
           activityValue: activityComplete
-            ? Number(sets[id]?.[0]?.reps) || 0
+            ? parseSessionDecimal(sets[id]?.[0]?.reps) || 0
             : null,
           restSeconds: tracksSets
             ? safeRestSeconds(restSeconds[id], 60)
@@ -9551,7 +10189,7 @@ function WorkoutModal({
                           );
 
                           const previousValues = previous
-                            ? `${previousWeight} ${unit} × ${previous.reps} ${isTimedPrescription(exercise.reps) ? "s" : "reps"}`
+                            ? `${formatEditableDecimal(previousWeight)} ${unit} × ${previous.reps} ${isTimedPrescription(exercise.reps) ? "s" : "reps"}`
                             : "Sin serie anterior";
 
                           return (
@@ -9567,7 +10205,7 @@ function WorkoutModal({
                                     aria-label={`Peso serie ${setIndex + 1}`}
                                     type="text"
                                     inputMode="decimal"
-                                    placeholder={String(previousWeight)}
+                                    placeholder={formatEditableDecimal(previousWeight)}
                                     value={
                                       weightValue === 0 || weightValue == null
                                         ? ""
@@ -9612,11 +10250,10 @@ function WorkoutModal({
                               {!tracksSets && !tracksReps && (
                                 <input
                                   aria-label={`Tiempo de actividad en minutos para ${exercise.name}`}
-                                  type="number"
+                                  type="text"
                                   min="0"
-                                  step="1"
                                   inputMode="decimal"
-                                  placeholder={String(
+                                  placeholder={formatEditableDecimal(
                                     lastActivityTime[id] ??
                                       targetMinutes ??
                                       0,
@@ -9901,6 +10538,8 @@ function NewUserGuide({
   onHeightUnit,
   weightGoal,
   onWeightGoal,
+  highResolutionProgressPhotos,
+  onHighResolutionProgressPhotos,
 }) {
   const backupInput = useRef(null);
   if (step === null) return null;
@@ -10095,6 +10734,21 @@ function NewUserGuide({
                   </option>
                 ))}
               </select>
+            </label>
+            <label class="progress-photo-highres onboarding-highres-setting">
+              <input
+                type="checkbox"
+                checked={highResolutionProgressPhotos}
+                onChange={(event) =>
+                  onHighResolutionProgressPhotos(event.currentTarget.checked)
+                }
+              />
+              <span>
+                <strong>Usar fotos de alta resolución</strong>
+                <small>
+                  Las fotos estándar ocupan menos espacio en el dispositivo.
+                </small>
+              </span>
             </label>
             <div class="onboarding-required">
               <Icon name="check" size={16} />
@@ -10329,6 +10983,9 @@ function MeasureModal({
   current,
   previous,
   dateOfBirth,
+  highResolutionProgressPhotos,
+  onMissingPhoto,
+  modalClassName = "",
   onClose,
   onSave,
   unit,
@@ -10338,61 +10995,207 @@ function MeasureModal({
   const showLength = (cm) =>
     cm
       ? heightUnit === "in"
-        ? cmToIn(cm).toFixed(1)
-        : Number(cm).toFixed(1)
+        ? formatEditableDecimal(cmToIn(cm), 1)
+        : formatEditableDecimal(cm, 1)
       : "";
   const [form, setForm] = useState({
     date: current?.date || dateKey(today()),
     dateOfBirth: dateOfBirth || "",
     weight: source.weight
-      ? unit === "lb"
-        ? (source.weight * 2.20462).toFixed(1)
-        : source.weight
+      ? formatEditableDecimal(
+          unit === "lb" ? source.weight * 2.20462 : source.weight,
+          unit === "lb" ? 1 : 6,
+        )
       : "",
     waist: showLength(source.waist),
     chest: showLength(source.chest),
     height: showLength(source.height),
     gender: source.gender ?? "",
-    bodyFat: source.bodyFat ?? "",
-    water: source.water ?? "",
-    boneMass:
-      source.boneMass != null ? kgToUnit(source.boneMass, unit).toFixed(1) : "",
-    muscleMass:
-      source.muscleMass != null
-        ? kgToUnit(source.muscleMass, unit).toFixed(1)
-        : "",
+    bodyFat: source.bodyFat != null ? formatEditableDecimal(source.bodyFat) : "",
+    water: source.water != null ? formatEditableDecimal(source.water) : "",
+    boneMass: source.boneMass != null ? formatEditableDecimal(kgToUnit(source.boneMass, unit), 1) : "",
+    muscleMass: source.muscleMass != null ? formatEditableDecimal(kgToUnit(source.muscleMass, unit), 1) : "",
   });
   const currentAge = calculateAge(form.dateOfBirth);
   const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+  const photoInput = useRef(null);
+  const [photoBlob, setPhotoBlob] = useState(null);
+  const [photoUri, setPhotoUri] = useState(current?.photoUri || "");
+  const pendingPhotoUri = useRef("");
+  const photoSavedToMeasure = useRef(false);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoError, setPhotoError] = useState("");
+  const [photoDeleteConfirmation, setPhotoDeleteConfirmation] = useState(false);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const closeModal = () => {
+    if (pendingPhotoUri.current && !photoSavedToMeasure.current) {
+      ProgressPhotos.deletePhoto({ uri: pendingPhotoUri.current }).catch(() => {});
+      pendingPhotoUri.current = "";
+    }
+    onClose?.();
+  };
+  const photoDeletePrompt = useMemo(
+    () => ({
+      title: translateText("Eliminar foto de progreso"),
+      message: translateText(
+        "La foto se eliminará y no se podrá recuperar. Solo se eliminará la foto; los datos del pesaje se conservarán al guardar los cambios.",
+      ),
+      confirmLabel: translateText("Eliminar foto"),
+    }),
+    [],
+  );
+  useEffect(() => {
+    let active = true;
+    setPhotoPreview("");
+    const loadPreview = async () => {
+      if (photoBlob) {
+        const dataUrl = await blobToDataUrl(photoBlob);
+        if (active) setPhotoPreview(dataUrl);
+        return;
+      }
+      if (photoRemoved) return;
+      if (photoUri && Capacitor.getPlatform() === "android") {
+        try {
+          const { data, mimeType } = await ProgressPhotos.readPhoto({
+            uri: photoUri,
+          });
+          if (active && data)
+            setPhotoPreview(`data:${mimeType || "image/jpeg"};base64,${data}`);
+        } catch {
+          let photoStillExists = true;
+          try {
+            const result = await ProgressPhotos.photoExists({ uri: photoUri });
+            photoStillExists = Boolean(result.exists);
+          } catch {
+            // Keep the persisted URI when the gallery cannot be checked.
+          }
+          if (active && !photoStillExists) {
+            setPhotoUri("");
+            setPhotoBlob(null);
+            setPhotoRemoved(true);
+            onMissingPhoto?.(current?.id);
+          }
+        }
+        return;
+      }
+      if (current?.photoAssetId) {
+        const legacyBlob = await getExerciseAsset(current.photoAssetId);
+        if (!active || !legacyBlob) return;
+        setPhotoPreview(await blobToDataUrl(legacyBlob));
+      }
+    };
+    loadPreview().catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [current?.photoAssetId, current?.id, photoUri, photoBlob, photoRemoved]);
+  const selectProgressPhoto = async (event) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+    setPhotoError("");
+    setPhotoProcessing(true);
+    try {
+      const compressed = await compressMeasurePhoto(
+        file,
+        highResolutionProgressPhotos,
+      );
+      const saved = await saveProgressPhotoToGallery(compressed);
+      if (pendingPhotoUri.current)
+        await ProgressPhotos.deletePhoto({ uri: pendingPhotoUri.current }).catch(() => {});
+      pendingPhotoUri.current = saved.uri;
+      photoSavedToMeasure.current = false;
+      setPhotoUri(saved.uri);
+      setPhotoBlob(compressed);
+      setPhotoRemoved(false);
+    } catch {
+      setPhotoError(translateText("No se pudo guardar la foto en Fotos/ProFit."));
+    } finally {
+      setPhotoProcessing(false);
+    }
+  };
   const minHeight = heightUnit === "in" ? 39 : 100;
   const maxHeight = heightUnit === "in" ? 98 : 250;
-  const toCm = (value) => (heightUnit === "in" ? inToCm(value) : Number(value));
+  const toCm = (value) => (heightUnit === "in" ? inToCm(parseLocalizedDecimal(value)) : parseLocalizedDecimal(value));
   return (
+    <>
     <Modal
       title={current?.id ? "Modificar pesaje" : "Añadir medidas"}
-      onClose={onClose}
+      onClose={closeModal}
+      className={modalClassName}
     >
       <form
         class="exercise-form measure-form"
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
-          const enteredWeight = Number(form.weight);
-          onSave({
-            id: current?.id || uid(),
-            date: form.date,
-            dateOfBirth: form.dateOfBirth,
-            weight: unit === "lb" ? enteredWeight / 2.20462 : enteredWeight,
-            waist: form.waist ? toCm(form.waist) : null,
-            chest: form.chest ? toCm(form.chest) : null,
-            height: toCm(form.height),
-            gender: form.gender,
-            bodyFat: form.bodyFat ? Number(form.bodyFat) : null,
-            water: form.water ? Number(form.water) : null,
-            boneMass:
-              form.boneMass !== "" ? unitToKg(form.boneMass, unit) : null,
-            muscleMass:
-              form.muscleMass !== "" ? unitToKg(form.muscleMass, unit) : null,
-          });
+          if (saving || photoProcessing) return;
+          const fields = [
+            ["weight", 1],
+            ["height", minHeight, maxHeight],
+            ["bodyFat", 0, 75],
+            ["water", 0, 100],
+            ["muscleMass", 0],
+            ["boneMass", 0],
+            ["waist", 0],
+            ["chest", 0],
+          ];
+          for (const [key, minimum, maximum] of fields) {
+            if (!form[key] && !["weight", "height"].includes(key)) continue;
+            const value = parseLocalizedDecimal(form[key]);
+            if (!Number.isFinite(value) || value < minimum || (maximum != null && value > maximum)) {
+              const input = event.currentTarget.elements.namedItem(key);
+              input?.setCustomValidity(translateText("Introduce un número válido dentro del rango permitido."));
+              input?.reportValidity();
+              input?.setCustomValidity("");
+              return;
+            }
+          }
+          const enteredWeight = parseLocalizedDecimal(form.weight);
+          setSaving(true);
+          try {
+            const measureId = current?.id || uid();
+            let photoAssetId = current?.photoAssetId || "";
+            let savedPhotoUri = photoUri;
+            if (photoRemoved) {
+              if (savedPhotoUri && Capacitor.getPlatform() === "android") {
+                const result = await ProgressPhotos.deletePhoto({ uri: savedPhotoUri });
+                if (!result?.deleted) {
+                  const { exists } = await ProgressPhotos.photoExists({ uri: savedPhotoUri });
+                  if (exists) throw new Error(translateText("No se pudo eliminar la foto de Fotos/ProFit."));
+                }
+              }
+              if (photoAssetId)
+                await deleteExerciseAsset(photoAssetId);
+              photoAssetId = "";
+              savedPhotoUri = "";
+            }
+            photoSavedToMeasure.current = true;
+            pendingPhotoUri.current = "";
+            onSave({
+              id: measureId,
+              date: form.date,
+              dateOfBirth: form.dateOfBirth,
+              weight: unit === "lb" ? enteredWeight / 2.20462 : enteredWeight,
+              waist: form.waist ? toCm(form.waist) : null,
+              chest: form.chest ? toCm(form.chest) : null,
+              height: toCm(form.height),
+              gender: form.gender,
+              bodyFat: form.bodyFat ? parseLocalizedDecimal(form.bodyFat) : null,
+              water: form.water ? parseLocalizedDecimal(form.water) : null,
+              boneMass:
+                form.boneMass !== "" ? unitToKg(form.boneMass, unit) : null,
+              muscleMass:
+                form.muscleMass !== "" ? unitToKg(form.muscleMass, unit) : null,
+              ...(savedPhotoUri ? { photoUri: savedPhotoUri } : {}),
+              ...(photoAssetId ? { photoAssetId } : {}),
+            });
+          } catch (error) {
+            setPhotoError(translateText("No se pudo guardar la foto en Fotos/ProFit."));
+          } finally {
+            setSaving(false);
+          }
         }}
       >
         <div class="eyebrow">SEGUIMIENTO CORPORAL</div>
@@ -10417,10 +11220,14 @@ function MeasureModal({
           <label>
             Peso ({unit})
             <input
+              name="weight"
               required
-              type="number"
+              type="text"
+              inputMode="decimal"
+              pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
               min="1"
               step="0.1"
+              placeholder={`0${decimalSeparator()}0`}
               value={form.weight}
               onInput={(e) => set("weight", e.currentTarget.value)}
             />
@@ -10448,11 +11255,15 @@ function MeasureModal({
           <label>
             Altura ({heightUnit})
             <input
+              name="height"
               required
-              type="number"
+              type="text"
+              inputMode="decimal"
+              pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
               min={minHeight}
               max={maxHeight}
               step="0.1"
+              placeholder={`0${decimalSeparator()}0`}
               value={form.height}
               onInput={(e) => set("height", e.currentTarget.value)}
             />
@@ -10480,7 +11291,10 @@ function MeasureModal({
             <label>
               Grasa (%)
               <input
-                type="number"
+                name="bodyFat"
+                type="text"
+                inputMode="decimal"
+                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
                 min="0"
                 max="75"
                 step="0.1"
@@ -10492,7 +11306,10 @@ function MeasureModal({
             <label>
               Agua (%)
               <input
-                type="number"
+                name="water"
+                type="text"
+                inputMode="decimal"
+                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
                 min="0"
                 max="100"
                 step="0.1"
@@ -10504,7 +11321,10 @@ function MeasureModal({
             <label>
               Músculo ({unit})
               <input
-                type="number"
+                name="muscleMass"
+                type="text"
+                inputMode="decimal"
+                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
                 min="0"
                 step="0.1"
                 value={form.muscleMass}
@@ -10515,7 +11335,10 @@ function MeasureModal({
             <label>
               Masa ósea ({unit})
               <input
-                type="number"
+                name="boneMass"
+                type="text"
+                inputMode="decimal"
+                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
                 min="0"
                 step="0.1"
                 value={form.boneMass}
@@ -10526,7 +11349,10 @@ function MeasureModal({
             <label>
               Cintura ({heightUnit})
               <input
-                type="number"
+                name="waist"
+                type="text"
+                inputMode="decimal"
+                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
                 min="0"
                 step="0.1"
                 value={form.waist}
@@ -10537,7 +11363,10 @@ function MeasureModal({
             <label>
               Pecho ({heightUnit})
               <input
-                type="number"
+                name="chest"
+                type="text"
+                inputMode="decimal"
+                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
                 min="0"
                 step="0.1"
                 value={form.chest}
@@ -10547,107 +11376,288 @@ function MeasureModal({
             </label>
           </div>
         </div>
+        <section className="measure-photo-section">
+          <div className="measure-photo-section-heading">
+            <span className="setting-icon">
+              <Icon name="image" size={16} />
+            </span>
+            <div>
+              <strong>{translateText("Foto de progreso")}</strong>
+              <small>
+                {translateText(
+                  "Opcional. Se guarda en la galería Fotos/ProFit.",
+                )}
+              </small>
+            </div>
+          </div>
+          <input
+            ref={photoInput}
+            className="visually-hidden"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            aria-label={translateText("Hacer o elegir una foto")}
+            disabled={photoProcessing || saving}
+            onChange={selectProgressPhoto}
+          />
+          <div className="measure-photo-actions">
+            <div className="measure-photo-frame-wrap">
+              <button
+                type="button"
+                className={`measure-photo-frame ${photoPreview ? "has-photo" : ""}`}
+                disabled={photoProcessing || saving}
+                onClick={() => photoInput.current?.click()}
+                aria-label={translateText(
+                  photoPreview ? "Cambiar foto" : "Hacer o elegir una foto",
+                )}
+              >
+                {photoPreview ? (
+                  <>
+                    <img
+                      className="measure-photo-form-preview"
+                      src={photoPreview}
+                      alt={translateText("Vista previa de la foto de progreso")}
+                    />
+                    <span className="measure-photo-frame-change">
+                      <Icon name="image" size={14} />
+                      {photoProcessing
+                        ? translateText("Preparando foto…")
+                        : translateText("Cambiar foto")}
+                    </span>
+                  </>
+                ) : (
+                  <span className="measure-photo-form-empty">
+                    <Icon name="image" size={23} />
+                    <strong>
+                      {photoProcessing
+                        ? translateText("Preparando foto…")
+                        : translateText("Hacer o elegir una foto")}
+                    </strong>
+                    <small>{translateText("Toca para añadir una imagen")}</small>
+                  </span>
+                )}
+              </button>
+              {photoPreview && (
+                <button
+                  type="button"
+                  className="measure-photo-remove icon-button danger"
+                  title={translateText("Quitar foto")}
+                  aria-label={translateText("Quitar foto")}
+                  disabled={saving}
+                  onClick={() => setPhotoDeleteConfirmation(true)}
+                >
+                  <Icon name="trash" size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+          {photoError && (
+            <small className="measure-photo-error" role="alert">
+              {photoError}
+            </small>
+          )}
+        </section>
         <div class="form-actions">
-          <Button variant="quiet" type="button" onClick={onClose}>
+          <Button variant="quiet" type="button" onClick={closeModal}>
             Cancelar
           </Button>
-          <Button type="submit">
+          <Button type="submit" disabled={saving || photoProcessing}>
             <Icon name="check" size={15} />{" "}
-            {current?.id ? "Actualizar pesaje" : "Guardar pesaje"}
+            {saving
+              ? translateText("Guardando…")
+              : current?.id
+                ? translateText("Actualizar pesaje")
+                : translateText("Guardar pesaje")}
           </Button>
         </div>
       </form>
     </Modal>
+    {photoDeleteConfirmation && (
+      <ConfirmModal
+        className={modalClassName ? "measure-photo-edit-delete-confirm" : ""}
+        confirmation={photoDeletePrompt}
+        onCancel={() => setPhotoDeleteConfirmation(false)}
+        onConfirm={() => {
+          setPhotoBlob(null);
+          setPhotoRemoved(true);
+          setPhotoError("");
+          setPhotoDeleteConfirmation(false);
+        }}
+      />
+    )}
+    </>
   );
 }
 function MeasureHistoryModal({
   measures,
   unit,
   heightUnit,
+  weekStartsOn = 1,
   onClose,
   onEdit,
   onDelete,
 }) {
+  const sortedMeasures = useMemo(
+    () => [...measures].sort((a, b) => b.date.localeCompare(a.date)),
+    [measures],
+  );
+  const [selectedDate, setSelectedDate] = useState("");
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(8);
+  const filteredMeasures = selectedDate
+    ? sortedMeasures.filter((measure) => measure.date === selectedDate)
+    : sortedMeasures;
+  const visibleMeasures = filteredMeasures.slice(0, visibleCount);
+  const chooseDate = (date) => {
+    setSelectedDate(date);
+    setVisibleCount(8);
+    setDatePickerOpen(false);
+  };
   return (
-    <Modal title="Historial corporal" onClose={onClose}>
-      <div class="measure-history-modal">
-        <div class="eyebrow">PESAJE Y COMPOSICIÓN</div>
-        <h2>Tus registros</h2>
-        <p>
-          Modifica o elimina una medición anterior cuando necesites corregirla.
-        </p>
-        {measures.length ? (
-          <div class="measure-history-list">
-            {[...measures]
-              .sort((a, b) => b.date.localeCompare(a.date))
-              .map((measure) => (
-                <article class="measure-history-card" key={measure.id}>
-                  <div>
-                    <strong>
-                      {dateLabel(measure.date, {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </strong>
-                    <span>
-                      {(unit === "lb"
-                        ? measure.weight * 2.20462
-                        : measure.weight
-                      ).toLocaleString(intlLocale(), {
-                        maximumFractionDigits: 1,
-                      })}{" "}
-                      {unit} ·{" "}
-                      {measure.height
-                        ? `${(heightUnit === "in" ? cmToIn(measure.height) : measure.height).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`
-                        : "altura pendiente"}
-                      {measure.gender
-                        ? ` · ${measure.gender.replaceAll("-", " ")}`
-                        : ""}
-                    </span>
-                    <small>
-                      {[
-                        measure.bodyFat && `grasa ${measure.bodyFat}%`,
-                        measure.water && `agua ${measure.water}%`,
-                        measure.muscleMass &&
-                          `músculo ${formatMassValue(measure.muscleMass, unit)}`,
-                        measure.boneMass &&
-                          `hueso ${formatMassValue(measure.boneMass, unit)}`,
-                        measure.waist &&
-                          `cintura ${(heightUnit === "in" ? cmToIn(measure.waist) : measure.waist).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`,
-                        measure.chest &&
-                          `pecho ${(heightUnit === "in" ? cmToIn(measure.chest) : measure.chest).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || "Sin composición adicional"}
-                    </small>
-                  </div>
-                  <div>
-                    <button
-                      type="button"
-                      class="icon-button"
-                      onClick={() => onEdit(measure)}
-                      aria-label="Editar pesaje"
-                    >
-                      <Icon name="edit" size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      class="icon-button danger"
-                      onClick={() => onDelete(measure)}
-                      aria-label="Eliminar pesaje"
-                    >
-                      <Icon name="trash" size={14} />
-                    </button>
-                  </div>
-                </article>
-              ))}
+    <>
+      <Modal
+        title={translateText("Historial corporal")}
+        onClose={onClose}
+        className="measure-history-main-modal"
+      >
+        <div className="measure-history-modal">
+          <div className="measure-history-heading">
+            <div>
+              <div className="eyebrow">{translateText("PESAJE Y COMPOSICIÓN")}</div>
+              <h2>{translateText("Tus registros")}</h2>
+              <p>{translateText("Modifica o elimina una medición anterior cuando necesites corregirla.")}</p>
+            </div>
+            <div className="measure-history-date-actions">
+              <Button
+                type="button"
+                variant="quiet"
+                className="measure-photo-date-button"
+                disabled={!sortedMeasures.length}
+                onClick={() => setDatePickerOpen(true)}
+              >
+                <Icon name="calendar" size={15} />
+                {selectedDate
+                  ? dateLabel(selectedDate, { day: "numeric", month: "long", year: "numeric" })
+                  : translateText("Elegir fecha")}
+              </Button>
+              {selectedDate && (
+                <button
+                  type="button"
+                  className="measure-history-clear-date"
+                  onClick={() => {
+                    setSelectedDate("");
+                    setVisibleCount(8);
+                  }}
+                >
+                  {translateText("Todos los pesajes")}
+                </button>
+              )}
+            </div>
           </div>
-        ) : (
-          <div class="empty-inline">Aún no has guardado pesajes.</div>
-        )}
-      </div>
-    </Modal>
+          {sortedMeasures.length ? (
+            <>
+              <div className="measure-history-results-label">
+                {selectedDate
+                  ? `${translateText("Registros del día")} · ${filteredMeasures.length}`
+                  : `${translateText("Mostrando")} ${visibleMeasures.length} ${translateText("de")} ${filteredMeasures.length} ${translateText("registros")}`}
+              </div>
+              <div className="measure-history-list">
+                {visibleMeasures.map((measure) => (
+                  <article className="measure-history-card" key={measure.id}>
+                    <div>
+                      <strong>
+                        {dateLabel(measure.date, {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </strong>
+                      <span>
+                        {(unit === "lb"
+                          ? measure.weight * 2.20462
+                          : measure.weight
+                        ).toLocaleString(intlLocale(), {
+                          maximumFractionDigits: 1,
+                        })}{" "}
+                        {unit} ·{" "}
+                        {measure.height
+                          ? `${(heightUnit === "in" ? cmToIn(measure.height) : measure.height).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`
+                          : translateText("altura pendiente")}
+                        {measure.gender
+                          ? ` · ${measure.gender.replaceAll("-", " ")}`
+                          : ""}
+                      </span>
+                      <small>
+                        {[
+                          measure.bodyFat && `${translateText("Grasa")}: ${measure.bodyFat}%`,
+                          measure.water && `${translateText("Agua")}: ${measure.water}%`,
+                          measure.muscleMass &&
+                            `${translateText("Masa muscular")}: ${formatMassValue(measure.muscleMass, unit)}`,
+                          measure.boneMass &&
+                            `${translateText("Masa ósea")}: ${formatMassValue(measure.boneMass, unit)}`,
+                          measure.waist &&
+                            `${translateText("Cintura")}: ${(heightUnit === "in" ? cmToIn(measure.waist) : measure.waist).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`,
+                          measure.chest &&
+                            `${translateText("Pecho")}: ${(heightUnit === "in" ? cmToIn(measure.chest) : measure.chest).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || translateText("Sin composición adicional")}
+                      </small>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        onClick={() => onEdit(measure)}
+                        aria-label={translateText("Editar pesaje")}
+                        title={translateText("Editar pesaje")}
+                      >
+                        <Icon name="edit" size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button danger"
+                        onClick={() => onDelete(measure)}
+                        aria-label={translateText("Eliminar pesaje")}
+                        title={translateText("Eliminar pesaje")}
+                      >
+                        <Icon name="trash" size={14} />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              {visibleMeasures.length < filteredMeasures.length && (
+                <button
+                  type="button"
+                  className="measure-history-more"
+                  onClick={() => setVisibleCount((count) => count + 8)}
+                >
+                  {translateText("Ver registros anteriores")}
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="empty-inline">
+              {translateText(selectedDate ? "No hay pesajes para esta fecha." : "Aún no has guardado pesajes.")}
+            </div>
+          )}
+        </div>
+      </Modal>
+      {datePickerOpen && (
+        <MeasurePhotoDatePickerModal
+          photos={sortedMeasures}
+          selectedDate={selectedDate}
+          weekStartsOn={weekStartsOn}
+          onSelectDate={chooseDate}
+          onClose={() => setDatePickerOpen(false)}
+          title="Elegir fecha del historial"
+          hint="Selecciona un día marcado para ver los pesajes."
+          itemLabel="Pesajes"
+          className="measure-history-date-modal"
+        />
+      )}
+    </>
   );
 }
 
@@ -10745,6 +11755,48 @@ function App() {
     loadUserRoutines(),
   );
   const [measures, setMeasures] = useState(loadUserMeasures);
+  const photoMigrationInFlight = useRef(new Set());
+  const photoMigrationAttempts = useRef(new Map());
+  const photoMigrationNotified = useRef(false);
+  const updateMeasurePhotoRecord = (measureId, update) => {
+    const stored = loadJson("profit-measures", []);
+    if (Array.isArray(stored) && stored.some((measure) => measure.id === measureId)) {
+      localStorage.setItem(
+        "profit-measures",
+        JSON.stringify(stored.map((measure) =>
+          measure.id === measureId ? update(measure) : measure,
+        )),
+      );
+    }
+    setMeasures((current) => current.map((measure) =>
+      measure.id === measureId ? update(measure) : measure,
+    ));
+  };
+  const unlinkMeasurePhotoReference = (measureOrId) => {
+    const measureId =
+      typeof measureOrId === "object" ? measureOrId?.id : measureOrId;
+    if (!measureId) return;
+    const savedMeasure = loadJson("profit-measures", [])
+      .find((measure) => measure.id === measureId)
+      || measures.find((measure) => measure.id === measureId);
+    if (savedMeasure?.photoAssetId) {
+      deleteExerciseAsset(savedMeasure.photoAssetId).catch(() => {
+        setToast(translateText("No se pudo eliminar la foto de Fotos/ProFit."));
+      });
+    }
+    updateMeasurePhotoRecord(measureId, (measure) => {
+      const {
+        photoUri: _photoUri,
+        photoAssetId: _photoAssetId,
+        ...withoutPhoto
+      } = measure;
+      return withoutPhoto;
+    });
+  };
+  const [highResolutionProgressPhotos, setHighResolutionProgressPhotos] =
+    useState(() =>
+      Boolean(loadJson("profit-progress-photos-high-resolution", false)),
+    );
   const [dateOfBirth, setDateOfBirth] = useState(loadUserDateOfBirth);
   const [guideStep, setGuideStep] = useState(() => {
     const flowVersion = Number(
@@ -10872,18 +11924,20 @@ function App() {
     return ["light", "dark", "system"].includes(saved) ? saved : "system";
   });
   const [language, setLanguage] = useState(() => {
-    const saved = loadJson("profit-language", "en");
+    const saved = loadJson("profit-language", "system");
     const hasExplicitSystemChoice = loadJson(
       "profit-language-explicit-choice",
       false,
     );
-    if (saved === "system" && !hasExplicitSystemChoice) return "en";
-    return ["system", "es", "ca", "en", "fr", "de", "it"].includes(saved) ? saved : "en";
+    if (!hasExplicitSystemChoice) return "system";
+    return ["system", "es", "ca", "en", "fr", "de", "it"].includes(saved)
+      ? saved
+      : "system";
   });
   const resolvedLanguage = resolveLanguage(language);
   const chooseLanguage = (value) => {
     localStorage.setItem("profit-language-explicit-choice", JSON.stringify(true));
-    setLanguage(["system", "es", "ca", "en", "fr", "de", "it"].includes(value) ? value : "en");
+    setLanguage(["system", "es", "ca", "en", "fr", "de", "it"].includes(value) ? value : "system");
   };
   const [soundsMuted, setSoundsMuted] = useState(() =>
     Boolean(loadJson("profit-sounds-muted", false)),
@@ -10920,7 +11974,10 @@ function App() {
   const [workoutChooserOpen, setWorkoutChooserOpen] = useState(false);
   const [measureOpen, setMeasureOpen] = useState(false);
   const [measureHistoryOpen, setMeasureHistoryOpen] = useState(false);
+  const [measurePhotosOpen, setMeasurePhotosOpen] = useState(false);
+  const [photoGalleryResumeId, setPhotoGalleryResumeId] = useState("");
   const [editingMeasure, setEditingMeasure] = useState(null);
+  const returnToPhotoGalleryAfterMeasureEdit = useRef(false);
   const [editingWorkout, setEditingWorkout] = useState(null);
   const [deleteWorkoutsOpen, setDeleteWorkoutsOpen] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
@@ -11154,6 +12211,110 @@ function App() {
   useEffect(() => {
     localStorage.setItem("profit-measures", JSON.stringify(measures));
   }, [measures]);
+  useEffect(() => {
+    if (Capacitor.getPlatform() !== "android") return;
+    measures
+      .filter((measure) => measure.photoUri && !measure.photoAssetId)
+      .forEach((measure) => {
+        ProgressPhotos.photoExists({ uri: measure.photoUri })
+          .then(({ exists }) => {
+            if (!exists) unlinkMeasurePhotoReference(measure.id);
+          })
+          .catch(() => {});
+      });
+  }, [measures]);
+  useEffect(() => {
+    if (Capacitor.getPlatform() !== "android") return;
+    measures
+      .filter((measure) => measure.photoAssetId)
+      .forEach((measure) => {
+        if (photoMigrationInFlight.current.has(measure.id)) return;
+        photoMigrationInFlight.current.add(measure.id);
+        (async () => {
+          try {
+            if (measure.photoUri) {
+              const { exists } = await ProgressPhotos.photoExists({
+                uri: measure.photoUri,
+              });
+              if (!exists) {
+                await deleteExerciseAsset(measure.photoAssetId);
+                updateMeasurePhotoRecord(measure.id, (item) => {
+                  const {
+                    photoUri: _missingUri,
+                    photoAssetId: _missingAssetId,
+                    ...withoutPhoto
+                  } = item;
+                  return withoutPhoto;
+                });
+                return;
+              }
+              await deleteExerciseAsset(measure.photoAssetId);
+              updateMeasurePhotoRecord(measure.id, (item) => {
+                const { photoAssetId: _migratedAssetId, ...withoutLegacyAsset } = item;
+                return withoutLegacyAsset;
+              });
+              photoMigrationAttempts.current.delete(measure.id);
+              return;
+            }
+
+            const legacyPhoto = await getExerciseAsset(measure.photoAssetId);
+            if (!legacyPhoto) {
+              updateMeasurePhotoRecord(measure.id, (item) => {
+                const { photoAssetId: _missingAssetId, ...withoutLegacyAsset } = item;
+                if (item.photoUri) return withoutLegacyAsset;
+                const { photoUri: _missingUri, ...withoutPhoto } = withoutLegacyAsset;
+                return withoutPhoto;
+              });
+              return;
+            }
+            const saved = await saveProgressPhotoToGallery(legacyPhoto);
+            const { exists } = await ProgressPhotos.photoExists({ uri: saved.uri });
+            if (!exists) throw new Error("La foto no aparece en la galería después de guardarla.");
+            const migratedUri = saved.uri;
+            const measureStillExists = loadJson("profit-measures", [])
+              .some((item) => item.id === measure.id);
+            if (!measureStillExists) {
+              await ProgressPhotos.deletePhoto({ uri: migratedUri }).catch(() => {});
+              await deleteExerciseAsset(measure.photoAssetId).catch(() => {});
+              return;
+            }
+
+            // Keep both references durably until IndexedDB confirms deletion. A
+            // retry can then reuse the gallery URI instead of writing a second copy.
+            updateMeasurePhotoRecord(measure.id, (item) => ({
+              ...item,
+              photoUri: migratedUri,
+            }));
+            await deleteExerciseAsset(measure.photoAssetId);
+            updateMeasurePhotoRecord(measure.id, (item) => {
+              const { photoAssetId: _migratedAssetId, ...withoutLegacyAsset } = item;
+              return withoutLegacyAsset;
+            });
+            photoMigrationAttempts.current.delete(measure.id);
+          } catch {
+            const attempts = (photoMigrationAttempts.current.get(measure.id) || 0) + 1;
+            photoMigrationAttempts.current.set(measure.id, attempts);
+            if (!photoMigrationNotified.current) {
+              photoMigrationNotified.current = true;
+              setToast(translateText("No se pudo mover una foto de progreso a Fotos/ProFit. Se volverá a intentar."));
+            }
+            if (attempts < 3) {
+              window.setTimeout(() => {
+                setMeasures((current) => [...current]);
+              }, 4000);
+            }
+          } finally {
+            photoMigrationInFlight.current.delete(measure.id);
+          }
+        })();
+      });
+  }, [measures]);
+  useEffect(() => {
+    localStorage.setItem(
+      "profit-progress-photos-high-resolution",
+      JSON.stringify(highResolutionProgressPhotos),
+    );
+  }, [highResolutionProgressPhotos]);
   useEffect(() => {
     localStorage.setItem("profit-date-of-birth", JSON.stringify(dateOfBirth));
   }, [dateOfBirth]);
@@ -12291,7 +13452,7 @@ function App() {
     setDateOfBirth(profileDateOfBirth);
     const savedMeasure = {
       ...measureData,
-      id: editingMeasure?.id || uid(),
+      id: measure.id || editingMeasure?.id || uid(),
     };
     setMeasures((current) =>
       (editingMeasure
@@ -12303,6 +13464,10 @@ function App() {
     );
     setMeasureOpen(false);
     setEditingMeasure(null);
+    if (returnToPhotoGalleryAfterMeasureEdit.current) {
+      returnToPhotoGalleryAfterMeasureEdit.current = false;
+      setMeasurePhotosOpen(true);
+    }
     if (guideStep === 2 && !editingMeasure) setGuideStep(3);
     setToast(
       editingMeasure
@@ -12315,13 +13480,54 @@ function App() {
       title: "Eliminar pesaje",
       message: `¿Eliminar el registro del ${dateLabel(measure.date, { day: "numeric", month: "long", year: "numeric" })}?`,
       confirmLabel: "Eliminar",
-      onConfirm: () => {
+      className: "measure-history-delete-confirm",
+      onConfirm: async () => {
+        // The photo is in the user's gallery; deleting a weigh-in only unlinks it.
+        try {
+          if (measure.photoAssetId)
+            await deleteExerciseAsset(measure.photoAssetId);
+        } catch {
+          setToast(translateText("No se pudo eliminar la foto de Fotos/ProFit."));
+          return;
+        }
         setMeasures((current) =>
           current.filter((item) => item.id !== measure.id),
         );
         setToast("Pesaje eliminado");
       },
     });
+  const deleteMeasurePhoto = async (measure) => {
+    if (!measure?.photoUri && !measure?.photoAssetId) return true;
+    try {
+      // Remove any legacy IndexedDB copy first so a failed gallery delete cannot
+      // leave a stale blob that the migration would restore later.
+      if (measure.photoAssetId)
+        await deleteExerciseAsset(measure.photoAssetId);
+      if (measure.photoUri && Capacitor.getPlatform() === "android") {
+        const result = await ProgressPhotos.deletePhoto({ uri: measure.photoUri });
+        if (!result?.deleted) {
+          const { exists } = await ProgressPhotos.photoExists({ uri: measure.photoUri });
+          if (exists) {
+            setToast(translateText("No se pudo eliminar la foto de Fotos/ProFit."));
+            return false;
+          }
+        }
+      }
+      updateMeasurePhotoRecord(measure.id, (item) => {
+        const {
+          photoUri: _photoUri,
+          photoAssetId: _photoAssetId,
+          ...withoutPhoto
+        } = item;
+        return withoutPhoto;
+      });
+      setToast(translateText("Foto eliminada; el pesaje se conserva"));
+      return true;
+    } catch {
+      setToast(translateText("No se pudo eliminar la foto de Fotos/ProFit."));
+      return false;
+    }
+  };
   const saveWorkoutEdits = (updated) => {
     setWorkouts((current) =>
       current
@@ -12363,6 +13569,7 @@ function App() {
     return fields;
   };
   const handleImportFile = async (file, expectedKind) => {
+    let missingProgressPhotos = 0;
     try {
       const envelope = normalizeImportedEnvelope(await decodeImportFile(file));
       const compatibleKinds =
@@ -12486,11 +13693,66 @@ function App() {
               ? data.profile.dateOfBirth
               : legacyBirthDate;
           if (importedBirthDate) setDateOfBirth(importedBirthDate);
-          const importedMeasures = data.measures
-            .filter((measure) => measure && typeof measure === "object")
-            .map(({ dateOfBirth: _legacyDateOfBirth, ...measure }) => measure);
+          const importedMeasures = data.measures.filter(
+            (measure) => measure && typeof measure === "object",
+          );
+          const restoredMeasures = await Promise.all(
+            importedMeasures.map(async (rawMeasure) => {
+              const {
+                dateOfBirth: _legacyDateOfBirth,
+                photoData,
+                photoAssetId: _sourcePhotoAssetId,
+                photoUri: sourcePhotoUri,
+                ...measure
+              } = rawMeasure;
+              const hadPhotoReference = Boolean(
+                sourcePhotoUri || _sourcePhotoAssetId || photoData,
+              );
+              const isAndroid = Capacitor.getPlatform() === "android";
+              if (isAndroid && sourcePhotoUri) {
+                try {
+                  const { exists } = await ProgressPhotos.photoExists({
+                    uri: sourcePhotoUri,
+                  });
+                  if (exists) {
+                    if (typeof photoData !== "string")
+                      return { ...measure, photoUri: sourcePhotoUri };
+                    const backupImage = photoData.match(
+                      /^data:([^;]+);base64,([\s\S]+)$/,
+                    );
+                    if (!backupImage)
+                      return { ...measure, photoUri: sourcePhotoUri };
+                    const galleryImage = await ProgressPhotos.readPhoto({
+                      uri: sourcePhotoUri,
+                    });
+                    if (
+                      backupImage[2].replace(/\s/g, "") ===
+                        String(galleryImage.data || "").replace(/\s/g, "")
+                    )
+                      return { ...measure, photoUri: sourcePhotoUri };
+                  }
+                } catch {
+                  // The backup's image data below can still restore the photo.
+                }
+              }
+              if (
+                isAndroid &&
+                typeof photoData === "string" &&
+                photoData.length <= 36 * 1024 * 1024
+              ) {
+                try {
+                  const saved = await saveProgressPhotoDataUrl(photoData);
+                  return { ...measure, photoUri: saved.uri };
+                } catch {
+                  // Keep the weigh-in when an optional photo cannot be restored.
+                }
+              }
+              if (hadPhotoReference) missingProgressPhotos += 1;
+              return measure;
+            }),
+          );
           setMeasures((current) =>
-            mergeById(current, importedMeasures).sort((a, b) =>
+            mergeById(current, restoredMeasures).sort((a, b) =>
               a.date.localeCompare(b.date),
             ),
           );
@@ -12574,6 +13836,10 @@ function App() {
             setWaterReminder(data.profile.waterReminder);
           if (typeof data.profile.weightReminder === "boolean")
             setWeightReminder(data.profile.weightReminder);
+          if (typeof data.profile.highResolutionProgressPhotos === "boolean")
+            setHighResolutionProgressPhotos(
+              data.profile.highResolutionProgressPhotos,
+            );
           if (
             typeof data.profile.weightReminderTime === "string" &&
             /^([01]\d|2[0-3]):[0-5]\d$/.test(data.profile.weightReminderTime)
@@ -12618,7 +13884,11 @@ function App() {
           if (typeof data.profile.soundsMuted === "boolean")
             updateSoundsMuted(data.profile.soundsMuted);
         }
-        setToast("Copia importada y combinada con los datos actuales");
+        setToast(
+          missingProgressPhotos
+            ? "La copia se importó, pero algunas fotos no se pudieron recuperar desde la galería."
+            : "Copia importada y combinada con los datos actuales",
+        );
       } else throw new Error("Este tipo de archivo no se puede importar aquí.");
       return true;
     } catch (error) {
@@ -12641,6 +13911,43 @@ function App() {
         exercises
           .filter((exercise) => !isUnmodifiedBundledExercise(exercise))
           .map(packageExercise),
+      );
+      const packagedMeasures = await Promise.all(
+        measures.map(async (measure) => {
+          if (!measure.photoUri && !measure.photoAssetId) return measure;
+          const {
+            photoAssetId,
+            ...withoutAssetReference
+          } = measure;
+          const photoUri = measure.photoUri;
+          try {
+            if (photoUri && Capacitor.getPlatform() === "android") {
+              const { data, mimeType } = await ProgressPhotos.readPhoto({
+                uri: photoUri,
+              });
+              return {
+                ...withoutAssetReference,
+                photoUri,
+                photoData: `data:${mimeType || "image/jpeg"};base64,${data}`,
+              };
+            }
+            if (photoAssetId) {
+              const blob = await getExerciseAsset(photoAssetId);
+              return blob
+                ? { ...withoutAssetReference, photoData: await blobToDataUrl(blob) }
+                : withoutAssetReference;
+            }
+            return {
+              ...withoutAssetReference,
+              ...(photoUri ? { photoUri } : {}),
+            };
+          } catch {
+            return {
+              ...withoutAssetReference,
+              ...(photoUri ? { photoUri } : {}),
+            };
+          }
+        }),
       );
       const payload = {
         profile: {
@@ -12666,6 +13973,7 @@ function App() {
           reminderQuietHours,
           weightReminder,
           weightReminderTime,
+          highResolutionProgressPhotos,
           proteinReminder,
           proteinReminderTime,
         },
@@ -12673,7 +13981,7 @@ function App() {
         routines,
         exercises: packagedExercises,
         routineGroups,
-        measures,
+        measures: packagedMeasures,
         waterByDay,
         kcalByDay,
         exportedAt: new Date().toISOString(),
@@ -12764,11 +14072,14 @@ function App() {
         workouts={workouts}
         exercises={exercises}
         measures={measures}
+        highResolutionProgressPhotos={highResolutionProgressPhotos}
+        onHighResolutionProgressPhotos={setHighResolutionProgressPhotos}
         onAddMeasure={() => {
           setEditingMeasure(null);
           setMeasureOpen(true);
         }}
         onManageMeasures={() => setMeasureHistoryOpen(true)}
+        onManagePhotos={() => setMeasurePhotosOpen(true)}
         onManageDashboardLayout={() => setDashboardLayoutOpen(true)}
         onEditMeasure={(measure) => {
           setMeasureHistoryOpen(false);
@@ -13071,6 +14382,8 @@ function App() {
           onHeightUnit={setHeightUnit}
           weightGoal={weightGoal}
           onWeightGoal={setWeightGoal}
+          highResolutionProgressPhotos={highResolutionProgressPhotos}
+          onHighResolutionProgressPhotos={setHighResolutionProgressPhotos}
         />
       )}
       {measureOpen && (
@@ -13078,9 +14391,16 @@ function App() {
           current={editingMeasure}
           previous={measures.at(-1)}
           dateOfBirth={dateOfBirth}
+          highResolutionProgressPhotos={highResolutionProgressPhotos}
+          modalClassName={returnToPhotoGalleryAfterMeasureEdit.current ? "measure-photo-edit-overlay" : ""}
+          onMissingPhoto={unlinkMeasurePhotoReference}
           onClose={() => {
             setMeasureOpen(false);
             setEditingMeasure(null);
+            if (returnToPhotoGalleryAfterMeasureEdit.current) {
+              returnToPhotoGalleryAfterMeasureEdit.current = false;
+              setMeasurePhotosOpen(true);
+            }
           }}
           onSave={saveMeasure}
           unit={unit}
@@ -13092,6 +14412,7 @@ function App() {
           measures={measures}
           unit={unit}
           heightUnit={heightUnit}
+          weekStartsOn={weekStartsOn}
           onClose={() => setMeasureHistoryOpen(false)}
           onEdit={(measure) => {
             setMeasureHistoryOpen(false);
@@ -13099,6 +14420,31 @@ function App() {
             setMeasureOpen(true);
           }}
           onDelete={removeMeasure}
+        />
+      )}
+      {measurePhotosOpen && (
+        <MeasurePhotoProgressModal
+          measures={measures}
+          initialPhotoId={photoGalleryResumeId}
+          unit={unit}
+          heightUnit={heightUnit}
+          weekStartsOn={weekStartsOn}
+          onClose={() => {
+            setMeasurePhotosOpen(false);
+            setPhotoGalleryResumeId("");
+          }}
+          onAddMeasure={() => {
+            setEditingMeasure(null);
+            setMeasureOpen(true);
+          }}
+          onEditMeasure={(measure) => {
+            returnToPhotoGalleryAfterMeasureEdit.current = true;
+            setPhotoGalleryResumeId(measure.id);
+            setEditingMeasure(measure);
+            setMeasureOpen(true);
+          }}
+          onDeletePhoto={deleteMeasurePhoto}
+          onMissingPhoto={unlinkMeasurePhotoReference}
         />
       )}
       {deleteWorkoutsOpen && (
@@ -13112,6 +14458,7 @@ function App() {
       {confirmation && (
         <ConfirmModal
           confirmation={confirmation}
+          className={confirmation.className || ""}
           onCancel={() => setConfirmation(null)}
           onConfirm={resolveConfirmation}
         />

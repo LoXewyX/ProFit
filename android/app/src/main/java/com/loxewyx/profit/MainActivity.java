@@ -19,6 +19,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AndroidSharePlugin.class);
         registerPlugin(AndroidNavigationPlugin.class);
         registerPlugin(RoutineLinkPlugin.class);
+        registerPlugin(ProgressPhotosPlugin.class);
         super.onCreate(savedInstanceState);
         WeighInReminderPlugin.recordNotificationAction(this, getIntent());
         String initialRoutinePayload = routinePayload(getIntent());
