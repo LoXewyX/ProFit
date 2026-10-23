@@ -138,6 +138,33 @@ const trackingOptionTranslations = {
     'Masa ósea (%)': 'Massa ossea (%)',
     'Masa ósea (peso)': 'Massa ossea (peso)',
   },
+  pt: {
+    'Cámara': 'Câmara',
+    'Ampliar foto': 'Ampliar fotografia',
+    'Foto ampliada': 'Fotografia ampliada',
+    'Cerrar imagen ampliada': 'Fechar fotografia ampliada',
+    'Galería': 'Galeria',
+    'Usa los iconos para añadir una imagen': 'Utiliza os ícones para adicionar uma imagem',
+    'Opciones de foto': 'Opções de fotografia',
+    'Incluir peso': 'Incluir peso',
+    'Unidad de medida': 'Unidade de medida',
+    'Porcentaje (%)': 'Percentagem (%)',
+    'Peso': 'Peso',
+    'Grasa corporal': 'Gordura corporal',
+    'Agua corporal': 'Água corporal',
+    'Masa muscular': 'Massa muscular',
+    'Masa ósea': 'Massa óssea',
+    'Cintura': 'Cintura',
+    'Pecho': 'Peito',
+    'Masa muscular (%)': 'Massa muscular (%)',
+    'Masa muscular (peso)': 'Massa muscular (peso)',
+    'Grasa corporal (%)': 'Gordura corporal (%)',
+    'Grasa corporal (peso)': 'Gordura corporal (peso)',
+    'Agua corporal (%)': 'Água corporal (%)',
+    'Agua corporal (peso)': 'Água corporal (peso)',
+    'Masa ósea (%)': 'Massa óssea (%)',
+    'Masa ósea (peso)': 'Massa óssea (peso)',
+  },
 };
 const dictionaries = Object.fromEntries(
   Object.entries(trackingOptionTranslations).map(([language, entries]) => [language, { ...entries }]),
@@ -211,6 +238,16 @@ function translateExerciseDescription(value, language) {
       ['Scegli un ritmo sostenibile e adatta l’intensità al tuo livello. Usa la dimostrazione come riferimento per eseguire il ', ' con controllo.'],
       ['Mantieni la schiena neutra e porta indietro il bacino. Tieni il carico vicino al corpo ed estendi l’anca con controllo per completare il ', '.'],
     ],
+    pt: [
+      ['Mantém o tronco firme e movimenta a articulação pretendida sem balanço. Controla a fase de esforço e o regresso durante o exercício ', '.'],
+      ['Mantém o tronco estável e os pulsos alinhados. Desce de forma controlada num percurso confortável e empurra para concluir ', '.'],
+      ['Mantém os ombros estáveis e conduz o movimento com os cotovelos. Aproxima a carga do tronco sem balanço e regressa lentamente durante ', '.'],
+      ['Segue a demonstração, assume uma posição estável e executa ', ' com um movimento confortável e controlado.'],
+      ['Fixa bem os pés e contrai o abdómen. Desce de forma controlada seguindo a demonstração e empurra o chão para regressar à posição inicial no exercício ', '.'],
+      ['Contrai o abdómen e mantém a zona lombar estável. Respira normalmente e controla a posição durante ', ', seguindo a demonstração.'],
+      ['Escolhe um ritmo sustentável e ajusta a intensidade ao teu nível. Usa a demonstração como referência para executar ', ' de forma controlada.'],
+      ['Mantém as costas numa posição neutra e leva a anca para trás. Mantém a carga perto do corpo e estende a anca de forma controlada ao concluir ', '.'],
+    ],
   };
   for (const [templateIndex, template] of exerciseDescriptionTemplates.entries()) {
     const [prefix, suffix] = template;
@@ -233,6 +270,7 @@ function translateMessagePackErrorDetail(value, language) {
     fr: ['Type de valeur MessagePack non pris en charge', 'Format MessagePack non pris en charge', 'Impossible de lire le fichier MessagePack'],
     de: ['Nicht unterstützter MessagePack-Werttyp', 'Nicht unterstütztes MessagePack-Format', 'MessagePack-Datei konnte nicht gelesen werden'],
     it: ['Tipo di valore MessagePack non supportato', 'Formato MessagePack non supportato', 'Impossibile leggere il file MessagePack'],
+    pt: ['Tipo de valor MessagePack não suportado', 'Formato MessagePack não suportado', 'Não foi possível ler o ficheiro MessagePack'],
   }[language] || ['Unsupported MessagePack value type', 'Unsupported MessagePack format', 'Could not read the MessagePack file'];
   const exact = dictionaries[language]?.[value]
     || lowercaseDictionaries[language]?.[value.toLocaleLowerCase('es')];
@@ -251,6 +289,7 @@ const normalizeLanguage = (value) => {
   if (normalized.startsWith('fr')) return 'fr';
   if (normalized.startsWith('de')) return 'de';
   if (normalized.startsWith('it')) return 'it';
+  if (normalized.startsWith('pt')) return 'pt';
   if (normalized.startsWith('ca')) return 'ca';
   if (normalized.startsWith('es')) return 'es';
   if (normalized.startsWith('en')) return 'en';
@@ -272,6 +311,7 @@ const localeLoaders = {
   fr: () => import('./locales/fr.json'),
   de: () => import('./locales/de.json'),
   it: () => import('./locales/it.json'),
+  pt: () => import('./locales/pt.json'),
 };
 const localeLoadPromises = new Map();
 
@@ -300,7 +340,7 @@ export function activateLanguage(language) {
 }
 
 export function intlLocale(language = activeLanguage) {
-  return ({ ca: 'ca-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', es: 'es-ES' })[language] || 'en-US';
+  return ({ ca: 'ca-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', pt: 'pt-PT', es: 'es-ES' })[language] || 'en-US';
 }
 
 export function decimalSeparator(language = activeLanguage) {
@@ -375,6 +415,7 @@ export function translateText(value) {
       fr: { 'cómo hacer': 'Comment faire', 'demostración de': 'Démonstration de', 'cargando imagen de': 'Chargement de l’image de', 'músculos principales de': 'Muscles principaux de' },
       de: { 'cómo hacer': 'So führst du', 'demostración de': 'Demonstration für', 'cargando imagen de': 'Bild wird geladen: ', 'músculos principales de': 'Primäre Muskeln für' },
       it: { 'cómo hacer': 'Come eseguire', 'demostración de': 'Dimostrazione di', 'cargando imagen de': 'Caricamento immagine di', 'músculos principales de': 'Muscoli principali per' },
+      pt: { 'cómo hacer': 'Como executar', 'demostración de': 'Demonstração de', 'cargando imagen de': 'A carregar a imagem de', 'músculos principales de': 'Músculos principais de' },
     };
     const prefix = prefixes[activeLanguage]?.[label] || prefixes.en[label];
     return `${leading}${prefix} ${localizedName}${trailing}`;
@@ -386,105 +427,112 @@ function translateEnglishDynamic(value, language) {
   const fr = language === 'fr';
   const de = language === 'de';
   const it = language === 'it';
+  const pt = language === 'pt';
   let match = value.match(/^Delete (\d+)$/);
-  if (match) return fr ? `Supprimer ${match[1]}` : de ? `${match[1]} löschen` : `Elimina ${match[1]}`;
+  if (match) return fr ? `Supprimer ${match[1]}` : de ? `${match[1]} löschen` : pt ? `Eliminar ${match[1]}` : `Elimina ${match[1]}`;
   match = value.match(/^(\d+) (routine|routines) with (\d+) (exercise|exercises) in total will be added\.(?: (\d+) (new exercise|new exercises) will be added to your library\.| The included exercises are already in your library\.)? Would you like to continue\?$/);
   if (match) {
     const [count, exercises] = [Number(match[1]), Number(match[3])];
-    const routineLabel = fr ? (count === 1 ? 'routine' : 'routines') : de ? (count === 1 ? 'Trainingsplan' : 'Trainingspläne') : (count === 1 ? 'routine' : 'routine');
-    const exerciseLabel = fr ? (exercises === 1 ? 'exercice' : 'exercices') : de ? (exercises === 1 ? 'Übung' : 'Übungen') : (exercises === 1 ? 'esercizio' : 'esercizi');
+    const routineLabel = fr ? (count === 1 ? 'routine' : 'routines') : de ? (count === 1 ? 'Trainingsplan' : 'Trainingspläne') : pt ? (count === 1 ? 'rotina' : 'rotinas') : (count === 1 ? 'routine' : 'routine');
+    const exerciseLabel = fr ? (exercises === 1 ? 'exercice' : 'exercices') : de ? (exercises === 1 ? 'Übung' : 'Übungen') : pt ? (exercises === 1 ? 'exercício' : 'exercícios') : (exercises === 1 ? 'esercizio' : 'esercizi');
     let sentence = fr ? `${count} ${routineLabel} contenant ${exercises} ${exerciseLabel} au total seront ajoutées.`
       : de ? `${count} ${routineLabel} mit insgesamt ${exercises} ${exerciseLabel} werden hinzugefügt.`
-        : `Verranno aggiunte ${count} ${routineLabel} con ${exercises} ${exerciseLabel} in totale.`;
+        : pt ? `Serão adicionadas ${count} ${routineLabel} com ${exercises} ${exerciseLabel} no total.`
+          : `Verranno aggiunte ${count} ${routineLabel} con ${exercises} ${exerciseLabel} in totale.`;
     if (match[4]) {
       const n = Number(match[4]);
       sentence += fr ? ` ${n} ${n === 1 ? 'nouvel exercice sera ajouté' : 'nouveaux exercices seront ajoutés'} à votre bibliothèque.`
         : de ? ` ${n} neue ${n === 1 ? 'Übung wird' : 'Übungen werden'} deiner Bibliothek hinzugefügt.`
-          : ` ${n} ${n === 1 ? 'nuovo esercizio verrà aggiunto' : 'nuovi esercizi verranno aggiunti'} alla tua libreria.`;
+          : pt ? ` Serão adicionados ${n} ${n === 1 ? 'novo exercício' : 'novos exercícios'} à tua biblioteca.`
+            : ` ${n} ${n === 1 ? 'nuovo esercizio verrà aggiunto' : 'nuovi esercizi verranno aggiunti'} alla tua libreria.`;
     } else if (value.includes('already in your library')) {
       sentence += fr ? ' Les exercices inclus sont déjà dans votre bibliothèque.'
         : de ? ' Die enthaltenen Übungen sind bereits in deiner Bibliothek.'
-          : ' Gli esercizi inclusi sono già nella tua libreria.';
+          : pt ? ' Os exercícios incluídos já estão na tua biblioteca.'
+            : ' Gli esercizi inclusi sono già nella tua libreria.';
     }
-    return sentence + (fr ? ' Voulez-vous continuer ?' : de ? ' Möchtest du fortfahren?' : ' Vuoi continuare?');
+    return sentence + (fr ? ' Voulez-vous continuer ?' : de ? ' Möchtest du fortfahren?' : pt ? ' Queres continuar?' : ' Vuoi continuare?');
   }
   match = value.match(/^(\d+) (routine|routines) with (\d+) (exercise|exercises) will be added to ProFit\. Would you like to continue\?$/);
   if (match) return fr ? `${match[1]} ${Number(match[1]) === 1 ? 'routine sera ajoutée' : 'routines seront ajoutées'} à ProFit avec ${match[3]} ${Number(match[3]) === 1 ? 'exercice' : 'exercices'}. Voulez-vous continuer?`
     : de ? `${match[1]} ${Number(match[1]) === 1 ? 'Trainingsplan wird' : 'Trainingspläne werden'} mit ${match[3]} ${Number(match[3]) === 1 ? 'Übung' : 'Übungen'} zu ProFit hinzugefügt. Möchtest du fortfahren?`
-      : `Verranno aggiunte ${match[1]} ${Number(match[1]) === 1 ? 'routine' : 'routine'} a ProFit con ${match[3]} ${Number(match[3]) === 1 ? 'esercizio' : 'esercizi'}. Vuoi continuare?`;
+      : pt ? `Serão adicionadas ${match[1]} ${Number(match[1]) === 1 ? 'rotina' : 'rotinas'} ao ProFit, com ${match[3]} ${Number(match[3]) === 1 ? 'exercício' : 'exercícios'}. Queres continuar?`
+        : `Verranno aggiunte ${match[1]} ${Number(match[1]) === 1 ? 'routine' : 'routine'} a ProFit con ${match[3]} ${Number(match[3]) === 1 ? 'esercizio' : 'esercizi'}. Vuoi continuare?`;
   match = value.match(/^(\d+(?:[.,]\d+)?) min estimated$/);
-  if (match) return fr ? `${match[1]} min estimées` : de ? `${match[1]} Min. geschätzt` : `${match[1]} min stimati`;
+  if (match) return fr ? `${match[1]} min estimées` : de ? `${match[1]} Min. geschätzt` : pt ? `${match[1]} min estimados` : `${match[1]} min stimati`;
   match = value.match(/^(.+?), no workouts$/);
-  if (match) return fr ? `${match[1]}, aucune séance` : de ? `${match[1]}, keine Trainingseinheiten` : `${match[1]}, nessuna sessione`;
+  if (match) return fr ? `${match[1]}, aucune séance` : de ? `${match[1]}, keine Trainingseinheiten` : pt ? `${match[1]}, nenhum treino` : `${match[1]}, nessuna sessione`;
   match = value.match(/^(.+?), (\d+) (workout|workouts)$/);
   if (match) return fr ? `${match[1]}, ${match[2]} ${Number(match[2]) === 1 ? 'séance' : 'séances'}`
     : de ? `${match[1]}, ${match[2]} ${Number(match[2]) === 1 ? 'Trainingseinheit' : 'Trainingseinheiten'}`
-      : `${match[1]}, ${match[2]} ${Number(match[2]) === 1 ? 'sessione' : 'sessioni'}`;
+      : pt ? `${match[1]}, ${match[2]} ${Number(match[2]) === 1 ? 'treino' : 'treinos'}`
+        : `${match[1]}, ${match[2]} ${Number(match[2]) === 1 ? 'sessione' : 'sessioni'}`;
   match = value.match(/^We use your latest weigh-in \((.+?) kg\) as a reference\. Water is estimated at 35 mL\/kg\.$/);
   if (match) return fr ? `Nous utilisons votre dernière pesée (${match[1]} kg) comme référence. L’eau est estimée à 35 mL/kg.`
     : de ? `Dein letzter Wiegeeintrag (${match[1]} kg) dient als Richtwert. Der Wasserbedarf wird auf 35 mL/kg geschätzt.`
-      : `Usiamo l’ultima pesata (${match[1]} kg) come riferimento. L’acqua è stimata a 35 mL/kg.`;
+      : pt ? `Usamos a tua pesagem mais recente (${match[1]} kg) como referência. A água é estimada em 35 mL/kg.`
+        : `Usiamo l’ultima pesata (${match[1]} kg) come riferimento. L’acqua è stimata a 35 mL/kg.`;
   match = value.match(/^Step (\d+) of (\d+)$/);
-  if (match) return fr ? `Étape ${match[1]} sur ${match[2]}` : de ? `Schritt ${match[1]} von ${match[2]}` : `Passaggio ${match[1]} di ${match[2]}`;
+  if (match) return fr ? `Étape ${match[1]} sur ${match[2]}` : de ? `Schritt ${match[1]} von ${match[2]}` : pt ? `Passo ${match[1]} de ${match[2]}` : `Passaggio ${match[1]} di ${match[2]}`;
   match = value.match(/^GETTING STARTED · (\d{2}) \/ (\d{2})$/);
-  if (match) return fr ? `POUR COMMENCER · ${match[1]} / ${match[2]}` : de ? `ERSTE SCHRITTE · ${match[1]} / ${match[2]}` : `PER INIZIARE · ${match[1]} / ${match[2]}`;
+  if (match) return fr ? `POUR COMMENCER · ${match[1]} / ${match[2]}` : de ? `ERSTE SCHRITTE · ${match[1]} / ${match[2]}` : pt ? `GUIA DE INÍCIO · ${match[1]} / ${match[2]}` : `PER INIZIARE · ${match[1]} / ${match[2]}`;
   match = value.match(/^(\d+) active days? this week$/);
-  if (match) return fr ? `${match[1]} ${Number(match[1]) === 1 ? 'jour actif' : 'jours actifs'} cette semaine` : de ? `${match[1]} aktive Tage diese Woche` : `${match[1]} ${Number(match[1]) === 1 ? 'giorno attivo' : 'giorni attivi'} questa settimana`;
+  if (match) return fr ? `${match[1]} ${Number(match[1]) === 1 ? 'jour actif' : 'jours actifs'} cette semaine` : de ? `${match[1]} aktive Tage diese Woche` : pt ? `${match[1]} ${Number(match[1]) === 1 ? 'dia ativo' : 'dias ativos'} esta semana` : `${match[1]} ${Number(match[1]) === 1 ? 'giorno attivo' : 'giorni attivi'} questa settimana`;
   match = value.match(/^(Collapse|Expand) group (.+)$/);
   if (match) {
-    const word = fr ? (match[1] === 'Collapse' ? 'Réduire' : 'Développer') : de ? (match[1] === 'Collapse' ? 'Einklappen' : 'Ausklappen') : (match[1] === 'Collapse' ? 'Comprimi' : 'Espandi');
-    if (match[2] === 'Sin grupo') return fr ? `${word} les routines sans groupe` : de ? `${word} Trainingspläne ohne Gruppe` : `${word} le routine senza gruppo`;
-    return `${word} ${fr ? 'le groupe' : de ? 'die Gruppe' : 'il gruppo'} ${match[2]}`;
+    const word = fr ? (match[1] === 'Collapse' ? 'Réduire' : 'Développer') : de ? (match[1] === 'Collapse' ? 'Einklappen' : 'Ausklappen') : pt ? (match[1] === 'Collapse' ? 'Recolher' : 'Expandir') : (match[1] === 'Collapse' ? 'Comprimi' : 'Espandi');
+    if (match[2] === 'Sin grupo') return fr ? `${word} les routines sans groupe` : de ? `${word} Trainingspläne ohne Gruppe` : pt ? `${word} rotinas sem grupo` : `${word} le routine senza gruppo`;
+    return `${word} ${fr ? 'le groupe' : de ? 'die Gruppe' : pt ? 'o grupo' : 'il gruppo'} ${match[2]}`;
   }
   match = value.match(/^Create a routine (?:in the (.+) group|without a group)$/);
-  if (match) return match[1] ? (fr ? `Créer une routine dans le groupe ${match[1]}` : de ? `Trainingsplan in der Gruppe ${match[1]} erstellen` : `Crea una routine nel gruppo ${match[1]}`)
-    : (fr ? 'Créer une routine sans groupe' : de ? 'Trainingsplan ohne Gruppe erstellen' : 'Crea una routine senza gruppo');
+  if (match) return match[1] ? (fr ? `Créer une routine dans le groupe ${match[1]}` : de ? `Trainingsplan in der Gruppe ${match[1]} erstellen` : pt ? `Criar uma rotina no grupo ${match[1]}` : `Crea una routine nel gruppo ${match[1]}`)
+    : (fr ? 'Créer une routine sans groupe' : de ? 'Trainingsplan ohne Gruppe erstellen' : pt ? 'Criar uma rotina sem grupo' : 'Crea una routine senza gruppo');
   match = value.match(/^Drag (.+) to reorder$/);
-  if (match) return fr ? `Faites glisser ${match[1]} pour réorganiser` : de ? `Ziehe ${match[1]}, um die Reihenfolge zu ändern` : `Trascina ${match[1]} per riordinare`;
+  if (match) return fr ? `Faites glisser ${match[1]} pour réorganiser` : de ? `Ziehe ${match[1]}, um die Reihenfolge zu ändern` : pt ? `Arrasta ${match[1]} para reordenar` : `Trascina ${match[1]} per riordinare`;
   match = value.match(/^More options for (.+)$/);
-  if (match) return fr ? `Plus d’options pour ${match[1]}` : de ? `Weitere Optionen für ${match[1]}` : `Altre opzioni per ${match[1]}`;
+  if (match) return fr ? `Plus d’options pour ${match[1]}` : de ? `Weitere Optionen für ${match[1]}` : pt ? `Mais opções para ${match[1]}` : `Altre opzioni per ${match[1]}`;
   match = value.match(/^Comment for (.+)$/);
-  if (match) return fr ? `Commentaire pour ${match[1]}` : de ? `Kommentar für ${match[1]}` : `Commento per ${match[1]}`;
+  if (match) return fr ? `Commentaire pour ${match[1]}` : de ? `Kommentar für ${match[1]}` : pt ? `Comentário para ${match[1]}` : `Commento per ${match[1]}`;
   match = value.match(/^Remove a set from (.+)$/);
-  if (match) return fr ? `Retirer une série de ${match[1]}` : de ? `Einen Satz bei ${match[1]} entfernen` : `Rimuovi una serie da ${match[1]}`;
+  if (match) return fr ? `Retirer une série de ${match[1]}` : de ? `Einen Satz bei ${match[1]} entfernen` : pt ? `Remover uma série de ${match[1]}` : `Rimuovi una serie da ${match[1]}`;
   match = value.match(/^Add a set to (.+)$/);
-  if (match) return fr ? `Ajouter une série à ${match[1]}` : de ? `Einen Satz zu ${match[1]} hinzufügen` : `Aggiungi una serie a ${match[1]}`;
+  if (match) return fr ? `Ajouter une série à ${match[1]}` : de ? `Einen Satz zu ${match[1]} hinzufügen` : pt ? `Adicionar uma série a ${match[1]}` : `Aggiungi una serie a ${match[1]}`;
   match = value.match(/^Set (\d+) weight$/);
-  if (match) return fr ? `Poids de la série ${match[1]}` : de ? `Gewicht für Satz ${match[1]}` : `Peso della serie ${match[1]}`;
+  if (match) return fr ? `Poids de la série ${match[1]}` : de ? `Gewicht für Satz ${match[1]}` : pt ? `Peso da série ${match[1]}` : `Peso della serie ${match[1]}`;
   match = value.match(/^Activity time in minutes for (.+)$/);
-  if (match) return fr ? `Durée de l’activité en minutes pour ${match[1]}` : de ? `Aktivitätsdauer in Minuten für ${match[1]}` : `Durata dell’attività in minuti per ${match[1]}`;
+  if (match) return fr ? `Durée de l’activité en minutes pour ${match[1]}` : de ? `Aktivitätsdauer in Minuten für ${match[1]}` : pt ? `Duração da atividade em minutos para ${match[1]}` : `Durata dell’attività in minuti per ${match[1]}`;
   match = value.match(/^Mark set (\d+) of (.+?) complete(?:\. Use the previous set: (.+))?$/);
   if (match) {
-    const done = fr ? `Marquer la série ${match[1]} de ${match[2]} comme terminée` : de ? `Satz ${match[1]} bei ${match[2]} als erledigt markieren` : `Segna la serie ${match[1]} di ${match[2]} come completata`;
-    return match[3] ? `${done}${fr ? `. Reprendre la série précédente : ${match[3]}` : de ? `. Vorherigen Satz übernehmen: ${match[3]}` : `. Usa la serie precedente: ${match[3]}`}` : done;
+    const done = fr ? `Marquer la série ${match[1]} de ${match[2]} comme terminée` : de ? `Satz ${match[1]} bei ${match[2]} als erledigt markieren` : pt ? `Marcar a série ${match[1]} de ${match[2]} como concluída` : `Segna la serie ${match[1]} di ${match[2]} come completata`;
+    return match[3] ? `${done}${fr ? `. Reprendre la série précédente : ${match[3]}` : de ? `. Vorherigen Satz übernehmen: ${match[3]}` : pt ? `. Utilizar a série anterior: ${match[3]}` : `. Usa la serie precedente: ${match[3]}`}` : done;
   }
   match = value.match(/^Muscle chart: (\d+) records across (\d+) visible muscle groups\.$/);
-  if (match) return fr ? `Graphique musculaire : ${match[1]} entrées dans ${match[2]} groupes musculaires visibles.` : de ? `Muskelübersicht: ${match[1]} Einträge in ${match[2]} sichtbaren Muskelgruppen.` : `Grafico muscolare: ${match[1]} registrazioni in ${match[2]} gruppi muscolari visibili.`;
+  if (match) return fr ? `Graphique musculaire : ${match[1]} entrées dans ${match[2]} groupes musculaires visibles.` : de ? `Muskelübersicht: ${match[1]} Einträge in ${match[2]} sichtbaren Muskelgruppen.` : pt ? `Gráfico muscular: ${match[1]} registos em ${match[2]} grupos musculares visíveis.` : `Grafico muscolare: ${match[1]} registrazioni in ${match[2]} gruppi muscolari visibili.`;
   match = value.match(/^(\d+) weeks achieved$/);
-  if (match) return fr ? `${match[1]} semaines validées` : de ? `${match[1]} Wochen erreicht` : `${match[1]} settimane raggiunte`;
+  if (match) return fr ? `${match[1]} semaines validées` : de ? `${match[1]} Wochen erreicht` : pt ? `${match[1]} semanas concluídas` : `${match[1]} settimane raggiunte`;
   match = value.match(/^Delete the full range \((\d+)\)$/);
-  if (match) return fr ? `Supprimer toute la période (${match[1]})` : de ? `Den gesamten Zeitraum löschen (${match[1]})` : `Elimina tutto il periodo (${match[1]})`;
+  if (match) return fr ? `Supprimer toute la période (${match[1]})` : de ? `Den gesamten Zeitraum löschen (${match[1]})` : pt ? `Eliminar todo o período (${match[1]})` : `Elimina tutto il periodo (${match[1]})`;
   match = value.match(/^Delete all workouts from this day \((\d+)\)$/);
-  if (match) return fr ? `Supprimer toutes les séances de ce jour (${match[1]})` : de ? `Alle Trainingseinheiten dieses Tages löschen (${match[1]})` : `Elimina tutte le sessioni di questo giorno (${match[1]})`;
+  if (match) return fr ? `Supprimer toutes les séances de ce jour (${match[1]})` : de ? `Alle Trainingseinheiten dieses Tages löschen (${match[1]})` : pt ? `Eliminar todos os treinos deste dia (${match[1]})` : `Elimina tutte le sessioni di questo giorno (${match[1]})`;
   match = value.match(/^Delete (.+) group and its (\d+) routines$/);
-  if (match) return fr ? `Supprimer le groupe ${match[1]} et ses ${match[2]} routines` : de ? `Gruppe ${match[1]} und ${match[2]} zugehörige Trainingspläne löschen` : `Elimina il gruppo ${match[1]} e le sue ${match[2]} routine`;
+  if (match) return fr ? `Supprimer le groupe ${match[1]} et ses ${match[2]} routines` : de ? `Gruppe ${match[1]} und ${match[2]} zugehörige Trainingspläne löschen` : pt ? `Eliminar o grupo ${match[1]} e as suas ${match[2]} rotinas` : `Elimina il gruppo ${match[1]} e le sue ${match[2]} routine`;
   match = value.match(/^“(.+?)” exercise imported$/);
-  if (match) return fr ? `Exercice « ${match[1]} » importé` : de ? `Übung „${match[1]}“ importiert` : `Esercizio «${match[1]}» importato`;
+  if (match) return fr ? `Exercice « ${match[1]} » importé` : de ? `Übung „${match[1]}“ importiert` : pt ? `Exercício « ${match[1]} » importado` : `Esercizio «${match[1]}» importato`;
   match = value.match(/^“(.+?)” routine imported$/);
-  if (match) return fr ? `Routine « ${match[1]} » importée` : de ? `Trainingsplan „${match[1]}“ importiert` : `Routine «${match[1]}» importata`;
+  if (match) return fr ? `Routine « ${match[1]} » importée` : de ? `Trainingsplan „${match[1]}“ importiert` : pt ? `Rotina « ${match[1]} » importada` : `Routine «${match[1]}» importata`;
   match = value.match(/^“(.+?)” workout imported$/);
-  if (match) return fr ? `Séance « ${match[1]} » importée` : de ? `Training „${match[1]}“ importiert` : `Sessione «${match[1]}» importata`;
+  if (match) return fr ? `Séance « ${match[1]} » importée` : de ? `Training „${match[1]}“ importiert` : pt ? `Treino « ${match[1]} » importado` : `Sessione «${match[1]}» importata`;
   match = value.match(/^Your last workout was (\d+) (day|days) ago\. Ready to get back to it\?$/);
-  if (match) return fr ? `Votre dernière séance remonte à ${match[1]} ${Number(match[1]) === 1 ? 'jour' : 'jours'}. Prêt à reprendre ?` : de ? `Dein letztes Training war vor ${match[1]} ${Number(match[1]) === 1 ? 'Tag' : 'Tagen'}. Bereit für die nächste Einheit?` : `L’ultimo allenamento risale a ${match[1]} ${Number(match[1]) === 1 ? 'giorno' : 'giorni'} fa. Ti va di riprendere?`;
+  if (match) return fr ? `Votre dernière séance remonte à ${match[1]} ${Number(match[1]) === 1 ? 'jour' : 'jours'}. Prêt à reprendre ?` : de ? `Dein letztes Training war vor ${match[1]} ${Number(match[1]) === 1 ? 'Tag' : 'Tagen'}. Bereit für die nächste Einheit?` : pt ? `O teu último treino foi há ${match[1]} ${Number(match[1]) === 1 ? 'dia' : 'dias'}. Queres voltar a treinar?` : `L’ultimo allenamento risale a ${match[1]} ${Number(match[1]) === 1 ? 'giorno' : 'giorni'} fa. Ti va di riprendere?`;
   match = value.match(/^(\d+) workouts to go\. Each one brings you closer\.$/);
-  if (match) return fr ? `Encore ${match[1]} séances. Chacune vous rapproche de votre objectif.` : de ? `Noch ${match[1]} Trainingseinheiten. Jede bringt dich deinem Ziel näher.` : `Ti mancano ${match[1]} sessioni. Ognuna ti avvicina al tuo obiettivo.`;
+  if (match) return fr ? `Encore ${match[1]} séances. Chacune vous rapproche de votre objectif.` : de ? `Noch ${match[1]} Trainingseinheiten. Jede bringt dich deinem Ziel näher.` : pt ? `Faltam-te ${match[1]} treinos. Cada um aproxima-te do teu objetivo.` : `Ti mancano ${match[1]} sessioni. Ognuna ti avvicina al tuo obiettivo.`;
   match = value.match(/^(\d+)-workout milestone reached! The next one is (\d+) workouts away\.$/);
-  if (match) return fr ? `Jalon des ${match[1]} séances atteint ! Le prochain est à ${match[2]} séances.` : de ? `${match[1]} Trainingseinheiten geschafft! Der nächste Meilenstein ist noch ${match[2]} Einheiten entfernt.` : `Traguardo di ${match[1]} sessioni raggiunto! Il prossimo è a ${match[2]} sessioni.`;
+  if (match) return fr ? `Jalon des ${match[1]} séances atteint ! Le prochain est à ${match[2]} séances.` : de ? `${match[1]} Trainingseinheiten geschafft! Der nächste Meilenstein ist noch ${match[2]} Einheiten entfernt.` : pt ? `Marco de ${match[1]} treinos alcançado! O próximo fica a ${match[2]} treinos de distância.` : `Traguardo di ${match[1]} sessioni raggiunto! Il prossimo è a ${match[2]} sessioni.`;
   return value;
 }
 
 function translateDynamicSentence(value, language) {
-  if (language === 'fr' || language === 'de' || language === 'it') {
+  if (language === 'fr' || language === 'de' || language === 'it' || language === 'pt') {
     let fragment = value.match(/^(\d+)\s*(días? activo|días? consecutivos|día consecutivo|sesiones?|series?|días esta semana|min de sesión|min estimados|mejor peso|semanas seguidas|semanas cumplidas|sesiones registradas)$/i);
     if (fragment) {
       const count = Number(fragment[1]);
@@ -507,6 +555,12 @@ function translateDynamicSentence(value, language) {
           'día consecutivo': 'giorno consecutivo', 'sesión': 'sessione', 'sesiones': 'sessioni', 'serie': 'serie', 'series': 'serie',
           'días esta semana': 'giorni questa settimana', 'min de sesión': 'min di sessione', 'min estimados': 'min stimati',
           'mejor peso': 'peso massimo', 'semanas seguidas': 'settimane consecutive', 'semanas cumplidas': 'settimane completate', 'sesiones registradas': 'sessioni registrate',
+        },
+        pt: {
+          'día activo': 'dia ativo', 'días activo': 'dias ativos', 'días activos': 'dias ativos', 'días consecutivos': 'dias consecutivos',
+          'día consecutivo': 'dia consecutivo', 'sesión': 'sessão', 'sesiones': 'sessões', 'serie': 'série', 'series': 'séries',
+          'días esta semana': 'dias esta semana', 'min de sesión': 'min de treino', 'min estimados': 'min estimados',
+          'mejor peso': 'maior peso', 'semanas seguidas': 'semanas consecutivas', 'semanas cumplidas': 'semanas concluídas', 'sesiones registradas': 'treinos registados',
         },
       }[language];
       const translated = translations[key];

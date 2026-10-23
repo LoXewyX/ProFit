@@ -21,6 +21,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(RoutineLinkPlugin.class);
         registerPlugin(ProgressPhotosPlugin.class);
         super.onCreate(savedInstanceState);
+        // Copy a file opened from Android into app-private cache; JavaScript imports it when ready.
+        AndroidSharePlugin.captureIncomingIntent(this, getIntent());
         WeighInReminderPlugin.recordNotificationAction(this, getIntent());
         String initialRoutinePayload = routinePayload(getIntent());
         if (initialRoutinePayload != null)
@@ -43,6 +45,7 @@ public class MainActivity extends BridgeActivity {
     protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        boolean incomingMessagePack = AndroidSharePlugin.captureIncomingIntent(this, intent);
         boolean openWeighIn = WeighInReminderPlugin.recordNotificationAction(this, intent);
         String routinePayload = routinePayload(intent);
         if (routinePayload != null && getBridge() != null && getBridge().getWebView() != null) {
@@ -55,6 +58,12 @@ public class MainActivity extends BridgeActivity {
         if (openWeighIn && getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().evaluateJavascript(
                 "window.dispatchEvent(new Event('profit:open-weigh-in'))",
+                null
+            );
+        }
+        if (incomingMessagePack && getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().evaluateJavascript(
+                "window.dispatchEvent(new Event('profit:incoming-file'))",
                 null
             );
         }

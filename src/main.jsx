@@ -494,7 +494,7 @@ const explicitSystemLanguage = loadJson("profit-language-explicit-choice", false
 const initialLanguagePreference =
   !explicitSystemLanguage
     ? "system"
-    : ["system", "es", "ca", "en", "fr", "de", "it"].includes(storedLanguage)
+    : ["system", "es", "ca", "en", "fr", "de", "it", "pt"].includes(storedLanguage)
       ? storedLanguage
       : "system";
 const [exerciseLibraryModule] = await Promise.all([
@@ -5625,6 +5625,7 @@ function ProfilePage({
               <option value="fr" translate="no">Français</option>
               <option value="de" translate="no">Deutsch</option>
               <option value="it" translate="no">Italiano</option>
+              <option value="pt" translate="no">Português</option>
             </select>
           </label>
           <SettingsSectionLabel
@@ -11961,6 +11962,9 @@ function MeasureHistoryModal({
 }
 
 function App() {
+  const incomingImportHandler = useRef(null);
+  const nativeImportProcessing = useRef(false);
+  const nativeImportQueued = useRef(false);
   const [, setLocaleRevision] = useState(0);
   const [tab, setTabState] = useState("home");
   const [pageTransition, setPageTransition] = useState(null);
@@ -12229,14 +12233,14 @@ function App() {
       false,
     );
     if (!hasExplicitSystemChoice) return "system";
-    return ["system", "es", "ca", "en", "fr", "de", "it"].includes(saved)
+    return ["system", "es", "ca", "en", "fr", "de", "it", "pt"].includes(saved)
       ? saved
       : "system";
   });
   const resolvedLanguage = resolveLanguage(language);
   const chooseLanguage = (value) => {
     localStorage.setItem("profit-language-explicit-choice", JSON.stringify(true));
-    setLanguage(["system", "es", "ca", "en", "fr", "de", "it"].includes(value) ? value : "system");
+    setLanguage(["system", "es", "ca", "en", "fr", "de", "it", "pt"].includes(value) ? value : "system");
   };
   const [soundsMuted, setSoundsMuted] = useState(() =>
     Boolean(loadJson("profit-sounds-muted", false)),
@@ -12781,7 +12785,9 @@ function App() {
         ? "ProFit — Train at your pace"
         : resolvedLanguage === "ca"
           ? "ProFit — Entrena al teu ritme"
-          : "ProFit — Entrena a tu ritmo";
+          : resolvedLanguage === "pt"
+            ? "ProFit — Treina ao teu ritmo"
+            : "ProFit — Entrena a tu ritmo";
     const description = document.querySelector("meta[name=description]");
     if (description)
       description.content =
@@ -12789,7 +12795,9 @@ function App() {
           ? "ProFit: log your workouts and track your progress, all stored locally."
           : resolvedLanguage === "ca"
             ? "ProFit: registra els entrenaments i segueix el progrés, tot localment."
-            : "ProFit: registra tus entrenamientos y sigue tu progreso, todo en local.";
+            : resolvedLanguage === "pt"
+              ? "ProFit: regista os teus treinos e acompanha o teu progresso, tudo guardado localmente."
+              : "ProFit: registra tus entrenamientos y sigue tu progreso, todo en local.";
   }, [resolvedLanguage]);
   useEffect(() => {
     localStorage.setItem("profit-sounds-muted", JSON.stringify(soundsMuted));
@@ -14173,7 +14181,7 @@ function App() {
           if (data.profile.palette) setPalette(data.profile.palette);
           if (["light", "dark", "system"].includes(data.profile.theme))
             setTheme(data.profile.theme);
-          if (["system", "es", "ca", "en", "fr", "de", "it"].includes(data.profile.language)) {
+          if (["system", "es", "ca", "en", "fr", "de", "it", "pt"].includes(data.profile.language)) {
             localStorage.setItem(
               "profit-language-explicit-choice",
               JSON.stringify(true),
@@ -14196,6 +14204,103 @@ function App() {
       return false;
     }
   };
+  incomingImportHandler.current = async (file) => {
+    const envelope = normalizeImportedEnvelope(await decodeImportFile(file));
+    const allowedKinds = ["backup", "routine", "routineGroup", "exercise", "workout"];
+    if (!allowedKinds.includes(envelope.kind))
+      throw new Error("Este archivo no contiene un tipo de datos compatible con ProFit.");
+    const expectedKind = envelope.kind === "routineGroup" ? "routine" : envelope.kind;
+    const imported = await handleImportFile(file, expectedKind);
+    if (imported && envelope.kind === "backup") {
+      localStorage.setItem("profit-onboarding-complete", JSON.stringify(true));
+      localStorage.setItem("profit-onboarding-flow-version", JSON.stringify(2));
+      localStorage.removeItem("profit-onboarding-step");
+      setGuideStep(null);
+    }
+    return imported;
+  };
+
+  useEffect(() => {
+    if (Capacitor.getPlatform() !== "android") return;
+    let active = true;
+    const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+    const processPendingImport = async () => {
+      if (!active) return;
+      if (nativeImportProcessing.current) {
+        nativeImportQueued.current = true;
+        return;
+      }
+      nativeImportProcessing.current = true;
+      let fileId = "";
+      try {
+        let info = null;
+        // Native Android copies the incoming content URI asynchronously into private cache.
+        for (let attempt = 0; active && attempt < 600; attempt += 1) {
+          info = await AndroidShare.getPendingImportInfo();
+          if (!info || info.status !== "preparing") break;
+          await sleep(500);
+        }
+        if (!active || !info || info.status === "none") return;
+        fileId = info.fileId || "";
+        if (info.status === "error")
+          throw new Error(info.error || "No se pudo leer el archivo abierto.");
+        if (info.status !== "ready")
+          throw new Error("El archivo tardó demasiado en prepararse. Vuelve a abrirlo desde el gestor de archivos.");
+
+        const size = Number(info.sizeBytes);
+        if (!Number.isSafeInteger(size) || size <= 0 || size > 128 * 1024 * 1024)
+          throw new Error("El archivo está vacío o supera el límite de 128 MB.");
+
+        const chunks = [];
+        let offset = 0;
+        while (active && offset < size) {
+          const length = Math.min(512 * 1024, size - offset);
+          const part = await AndroidShare.readPendingImportChunk({ fileId, offset, length });
+          const binary = atob(part.data || "");
+          if (!binary.length || binary.length > length)
+            throw new Error("El archivo recibido está incompleto.");
+          const bytes = new Uint8Array(binary.length);
+          for (let index = 0; index < binary.length; index += 1)
+            bytes[index] = binary.charCodeAt(index);
+          chunks.push(bytes);
+          offset += bytes.length;
+        }
+        if (!active) return;
+        if (offset !== size) throw new Error("No se pudo transferir el archivo completo a ProFit.");
+        const file = new File(chunks, info.filename || "profit-import.msgpack", {
+          type: info.mimeType || "application/msgpack",
+          lastModified: Date.now(),
+        });
+        if (typeof incomingImportHandler.current !== "function")
+          throw new Error("El importador de ProFit todavía no está disponible.");
+        await incomingImportHandler.current(file);
+      } catch (error) {
+        if (active) setToast(error?.message || "No se pudo abrir el archivo con ProFit.");
+      } finally {
+        if (fileId) {
+          try { await AndroidShare.finishPendingImport({ fileId }); } catch (error) {
+            console.warn("No se pudo limpiar el archivo temporal recibido", error);
+          }
+        }
+        nativeImportProcessing.current = false;
+        if (active && nativeImportQueued.current) {
+          nativeImportQueued.current = false;
+          void processPendingImport();
+        }
+      }
+    };
+
+    const onIncomingFile = () => { void processPendingImport(); };
+    window.addEventListener("profit:incoming-file", onIncomingFile);
+    // Covers files that launched ProFit from a cold start before this listener existed.
+    void processPendingImport();
+    return () => {
+      active = false;
+      window.removeEventListener("profit:incoming-file", onIncomingFile);
+    };
+  }, []);
+
   const importBackupFromGuide = async (file) => {
     const imported = await handleImportFile(file, "backup");
     if (!imported) return;

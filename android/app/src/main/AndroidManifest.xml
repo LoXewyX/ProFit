@@ -34,6 +34,24 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="profit" android:host="routine-plan" />
             </intent-filter>
+            <!-- Open ProFit MessagePack exports from file managers and other apps. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/msgpack" />
+                <data android:mimeType="application/x-msgpack" />
+                <data android:mimeType="application/vnd.msgpack" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <!-- Also allow another app to share a MessagePack file directly with ProFit. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/msgpack" />
+                <data android:mimeType="application/x-msgpack" />
+                <data android:mimeType="application/vnd.msgpack" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
         </activity>
 
         <receiver

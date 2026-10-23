@@ -3038,6 +3038,8 @@ html, body, #app, .app-shell, .main-area { overscroll-behavior-y: none; }
   .exercise-form textarea { min-height: 92px; height: auto; padding: 11px; }
   .exercise-form .form-row, .exercise-form .form-row.three { grid-template-columns: minmax(0, 1fr); gap: 13px; }
   .exercise-form .form-actions { position: sticky; bottom: -1px; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; padding: 11px 0 max(4px, env(safe-area-inset-bottom, 0px)); background: #1b211c; }
+  /* Keep the weigh-in form actions above the floating camera/gallery controls. */
+  .measure-form .form-actions { z-index: 5; background: #181d19; }
   .exercise-form .form-actions .button { min-height: 46px; font-size: 13.5px; }
 }
 
