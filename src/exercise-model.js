@@ -18,6 +18,8 @@ export const exerciseMuscleLine = (exercise) =>
 
 export const exerciseTracksSets = (exercise) => exercise?.trackSets !== false;
 export const exerciseTracksReps = (exercise) => exercise?.trackReps !== false;
+export const exerciseTracksWeight = (exercise) =>
+  exerciseTracksSets(exercise) && exercise?.trackWeight !== false;
 
 export const exerciseDoseLabel = (exercise) =>
   [

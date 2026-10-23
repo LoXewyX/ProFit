@@ -36,6 +36,7 @@ import {
   exercisePrimaryMuscleLabel,
   exerciseTracksReps,
   exerciseTracksSets,
+  exerciseTracksWeight,
   exerciseValueLabel,
   hasExerciseDemoMedia,
   isExerciseDemoVideo,
@@ -254,6 +255,7 @@ const normalizeExerciseData = (exercise = {}) => {
     normalized.trackSets = false;
   if (normalized.trackReps === undefined && legacyActivity)
     normalized.trackReps = false;
+  if (normalized.trackWeight === undefined) normalized.trackWeight = true;
   if (normalizeMuscleFilterValue(normalized.muscle) === "otro")
     normalized.muscle = "";
   if (Array.isArray(normalized.secondary))
@@ -1088,6 +1090,7 @@ const initialExercises = [
       "No dejes caer la cadera",
       "Respira con normalidad",
     ],
+    trackWeight: false,
     accent: "teal",
   },
 ];
@@ -1183,10 +1186,20 @@ function loadExerciseLibrary() {
   if (!stored) return defaultExerciseLibrary;
   const enriched = dedupeExerciseEntries(
     refreshCatalogEntries(
-      stored.map((exercise) => ({
-        ...refreshBundledExerciseMedia(exercise),
-        __profitSourceId: exercise.id,
-      })),
+      stored.map((exercise) => {
+        const refreshed = refreshBundledExerciseMedia(exercise);
+        const defaultDefinition =
+          bundledExerciseById.get(refreshed.id) ||
+          legacySeedExerciseById.get(refreshed.id);
+        return {
+          ...refreshed,
+          ...(exercise.trackWeight === undefined &&
+          defaultDefinition?.trackWeight !== undefined
+            ? { trackWeight: defaultDefinition.trackWeight }
+            : {}),
+          __profitSourceId: exercise.id,
+        };
+      }),
     ),
   ).map(({ __profitSourceId, ...exercise }) => exercise);
   const storedById = new Map(enriched.map((exercise) => [exercise.id, exercise]));
@@ -1678,7 +1691,7 @@ function WeeklyBars({ workouts, timeframe = 7, weekStartsOn = 1 }) {
     const volume = workout
       ? workout.exercises.reduce(
           (sum, item) =>
-            sum + item.sets.reduce((s, set) => s + set.weight * set.reps, 0),
+            sum + (item.trackWeight === false ? 0 : item.sets.reduce((s, set) => s + set.weight * set.reps, 0)),
           0,
         )
       : 0;
@@ -2127,7 +2140,7 @@ function Dashboard({
     (n, workout) =>
       n +
       workout.exercises.reduce(
-        (c, e) => c + e.sets.reduce((a, set) => a + set.weight * set.reps, 0),
+        (c, e) => c + (e.trackWeight === false ? 0 : e.sets.reduce((a, set) => a + set.weight * set.reps, 0)),
         0,
       ),
     0,
@@ -2136,7 +2149,7 @@ function Dashboard({
     (n, workout) =>
       n +
       workout.exercises.reduce(
-        (c, e) => c + e.sets.reduce((a, set) => a + set.weight * set.reps, 0),
+        (c, e) => c + (e.trackWeight === false ? 0 : e.sets.reduce((a, set) => a + set.weight * set.reps, 0)),
         0,
       ),
     0,
@@ -2529,7 +2542,7 @@ function getExerciseStats(exercise, workouts, range) {
     .filter((workout) => workout.date >= cutoff)
     .flatMap((workout) => {
       const entry = workout.exercises.find((item) => item.id === exercise.id);
-      if (!entry) return [];
+      if (!entry || entry.trackWeight === false) return [];
       const sets = entry.sets.map((set) => ({
         ...set,
         date: workout.date,
@@ -4418,10 +4431,9 @@ function StrengthMedals({ workouts, unit, cardOrder, hidden = false }) {
   const records = new Map();
   workouts.forEach((workout) =>
     workout.exercises.forEach((entry) => {
-      const best = Math.max(
-        0,
-        ...entry.sets.map((set) => Number(set.weight) || 0),
-      );
+      const best = entry.trackWeight === false
+        ? 0
+        : Math.max(0, ...entry.sets.map((set) => Number(set.weight) || 0));
       const reps = Math.max(
         0,
         ...entry.sets.map((set) => Number(set.reps) || 0),
@@ -4651,7 +4663,7 @@ function ProfilePage({
     (total, workout) =>
       total +
       workout.exercises.reduce(
-        (n, e) => n + e.sets.reduce((s, set) => s + set.weight * set.reps, 0),
+        (n, e) => n + (e.trackWeight === false ? 0 : e.sets.reduce((s, set) => s + set.weight * set.reps, 0)),
         0,
       ),
     0,
@@ -4660,7 +4672,7 @@ function ProfilePage({
     (total, workout) =>
       total +
       workout.exercises.reduce(
-        (n, e) => n + e.sets.reduce((s, set) => s + set.weight * set.reps, 0),
+        (n, e) => n + (e.trackWeight === false ? 0 : e.sets.reduce((s, set) => s + set.weight * set.reps, 0)),
         0,
       ),
     0,
@@ -5772,10 +5784,12 @@ function ActivityCalendar({ workouts, onWorkoutOpen, unit, weekStartsOn = 1 }) {
       workout.exercises.reduce(
         (sum, exercise) =>
           sum +
-          exercise.sets.reduce(
-            (subtotal, set) => subtotal + set.weight * set.reps,
-            0,
-          ),
+          (exercise.trackWeight === false
+            ? 0
+            : exercise.sets.reduce(
+                (subtotal, set) => subtotal + set.weight * set.reps,
+                0,
+              )),
         0,
       ),
     0,
@@ -5822,10 +5836,12 @@ function ActivityCalendar({ workouts, onWorkoutOpen, unit, weekStartsOn = 1 }) {
       workout.exercises.reduce(
         (sum, exercise) =>
           sum +
-          exercise.sets.reduce(
-            (subtotal, set) => subtotal + set.weight * set.reps,
-            0,
-          ),
+          (exercise.trackWeight === false
+            ? 0
+            : exercise.sets.reduce(
+                (subtotal, set) => subtotal + set.weight * set.reps,
+                0,
+              )),
         0,
       ),
     0,
@@ -7232,10 +7248,9 @@ function personalRecordsForWorkout(workout, previousWorkouts) {
   previousWorkouts.forEach((session) =>
     session.exercises.forEach((entry) => {
       const current = previousBest.get(entry.id) || { weight: 0, reps: 0 };
-      const weight = Math.max(
-        0,
-        ...entry.sets.map((set) => Number(set.weight) || 0),
-      );
+      const weight = entry.trackWeight === false
+        ? 0
+        : Math.max(0, ...entry.sets.map((set) => Number(set.weight) || 0));
       const reps = Math.max(
         0,
         ...entry.sets.map((set) => Number(set.reps) || 0),
@@ -7248,10 +7263,9 @@ function personalRecordsForWorkout(workout, previousWorkouts) {
   );
   return workout.exercises.flatMap((entry) => {
     const previous = previousBest.get(entry.id) || { weight: 0, reps: 0 };
-    const bestWeight = Math.max(
-      0,
-      ...entry.sets.map((set) => Number(set.weight) || 0),
-    );
+    const bestWeight = entry.trackWeight === false
+      ? 0
+      : Math.max(0, ...entry.sets.map((set) => Number(set.weight) || 0));
     const bestReps = Math.max(
       0,
       ...entry.sets.map((set) => Number(set.reps) || 0),
@@ -7578,9 +7592,10 @@ function ExerciseDetail({
                           ? `${entry.activityValue} min`
                           : "Actividad"
                         : entry.sets
-                            .map(
-                              (set) =>
-                                `${(unit === "lb" ? set.weight * 2.20462 : set.weight).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })}×${set.reps}`,
+                            .map((set) =>
+                              entry.trackWeight === false
+                                ? `${set.reps} reps`
+                                : `${(unit === "lb" ? set.weight * 2.20462 : set.weight).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })}×${set.reps}`,
                             )
                             .join(" · ")}
                     </span>
@@ -7674,7 +7689,9 @@ function WorkoutDetail({ workout, exercises, unit, onClose, onShare, onEdit }) {
   const volume = workout.exercises.reduce(
     (sum, entry) =>
       sum +
-      entry.sets.reduce((subtotal, set) => subtotal + set.weight * set.reps, 0),
+      (entry.trackWeight === false
+        ? 0
+        : entry.sets.reduce((subtotal, set) => subtotal + set.weight * set.reps, 0)),
     0,
   );
   const shownVolume = unit === "lb" ? volume * 2.20462 : volume;
@@ -7763,31 +7780,37 @@ function WorkoutDetail({ workout, exercises, unit, onClose, onShare, onEdit }) {
                 <MuscleMap muscles={getMuscleFocus(exercise)} compact />
                 <div class="workout-set-table">
                   {entry.sets.length > 0 && (
-                    <div class="workout-set-labels">
+                    <div class={`workout-set-labels${entry.trackWeight === false ? " no-weight" : ""}`}>
                       <span>Serie</span>
-                      <span>Peso ({unit})</span>
+                      {entry.trackWeight !== false && <span>Peso ({unit})</span>}
                       <span>Reps</span>
-                      <span>Volumen</span>
+                      {entry.trackWeight !== false && <span>Volumen</span>}
                     </div>
                   )}
                   {entry.sets.map((set, index) => {
-                    const weight =
-                      unit === "lb" ? set.weight * 2.20462 : set.weight;
+                    const tracksWeight = entry.trackWeight !== false;
+                    const weight = tracksWeight
+                      ? unit === "lb" ? set.weight * 2.20462 : set.weight
+                      : 0;
                     return (
-                      <div class="workout-set-row" key={`${entry.id}-${index}`}>
+                      <div class={`workout-set-row${tracksWeight ? "" : " no-weight"}`} key={`${entry.id}-${index}`}>
                         <span>{String(index + 1).padStart(2, "0")}</span>
-                        <strong>
-                          {weight.toLocaleString(intlLocale(), {
-                            maximumFractionDigits: 1,
-                          })}
-                        </strong>
+                        {tracksWeight && (
+                          <strong>
+                            {weight.toLocaleString(intlLocale(), {
+                              maximumFractionDigits: 1,
+                            })}
+                          </strong>
+                        )}
                         <span>{set.reps}</span>
-                        <span>
-                          {Math.round(weight * set.reps).toLocaleString(
-                            intlLocale(),
-                          )}{" "}
-                          {unit}
-                        </span>
+                        {tracksWeight && (
+                          <span>
+                            {Math.round(weight * set.reps).toLocaleString(
+                              intlLocale(),
+                            )}{" "}
+                            {unit}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
@@ -7892,6 +7915,7 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
                   : definition
                     ? exerciseTracksSets(definition)
                     : !entry.activityComplete;
+              const tracksWeight = tracksSets && entry.trackWeight !== false;
               const { restSeconds, ...withoutRest } = entry;
               return {
                 ...(tracksSets
@@ -7903,6 +7927,7 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
                           ? null
                           : parseLocalizedDecimal(entry.activityValue),
                     }),
+                trackWeight: tracksWeight,
                 sets: entry.sets.map((set, setIndex) => {
                 const draft =
                   weightDrafts[weightDraftKey(exerciseIndex, setIndex)];
@@ -7914,11 +7939,13 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
                   parsed >= 0;
                 return {
                   ...set,
-                  weight: hasValidDraft
-                    ? unit === "lb"
-                      ? parsed / 2.20462
-                      : parsed
-                    : Math.max(0, Number(set.weight) || 0),
+                  weight: !tracksWeight
+                    ? 0
+                    : hasValidDraft
+                      ? unit === "lb"
+                        ? parsed / 2.20462
+                        : parsed
+                      : Math.max(0, Number(set.weight) || 0),
                 };
                 }),
               };
@@ -7975,6 +8002,7 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
                   ? exerciseTracksSets(definition)
                   : !entry.activityComplete;
             const isActivity = !tracksSets;
+            const tracksWeight = tracksSets && entry.trackWeight !== false;
             return (
               <section
                 class="workout-edit-exercise"
@@ -8027,30 +8055,32 @@ function WorkoutEditModal({ workout, exercises, unit, onClose, onSave }) {
                   )}
                 </div>
                 {entry.sets.map((set, setIndex) => (
-                  <div class="workout-edit-set" key={setIndex}>
+                  <div class={`workout-edit-set${tracksWeight ? "" : " no-weight"}`} key={setIndex}>
                     <span>Serie {setIndex + 1}</span>
-                    <label>
-                      Peso ({unit})
-                      <input
-                        type="text"
-                        min="0"
-                        step="any"
-                        inputMode="decimal"
-                        placeholder={`0${decimalSeparator()}0`}
-                        value={
-                          weightDrafts[weightDraftKey(exerciseIndex, setIndex)] ??
-                          displayedWeight(set.weight)
-                        }
-                        onInput={(event) => {
-                          const value = event.currentTarget.value;
-                          setWeightDrafts((current) => ({
-                            ...current,
-                            [weightDraftKey(exerciseIndex, setIndex)]: value,
-                          }));
-                        }}
-                        onBlur={() => commitWeightDraft(exerciseIndex, setIndex)}
-                      />
-                    </label>
+                    {tracksWeight && (
+                      <label>
+                        Peso ({unit})
+                        <input
+                          type="text"
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
+                          placeholder={`0${decimalSeparator()}0`}
+                          value={
+                            weightDrafts[weightDraftKey(exerciseIndex, setIndex)] ??
+                            displayedWeight(set.weight)
+                          }
+                          onInput={(event) => {
+                            const value = event.currentTarget.value;
+                            setWeightDrafts((current) => ({
+                              ...current,
+                              [weightDraftKey(exerciseIndex, setIndex)]: value,
+                            }));
+                          }}
+                          onBlur={() => commitWeightDraft(exerciseIndex, setIndex)}
+                        />
+                      </label>
+                    )}
                     <label>
                       Reps
                       <input
@@ -8746,6 +8776,17 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
             />
             <span>Repeticiones o duración</span>
           </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={form.trackSets !== false && form.trackWeight !== false}
+              disabled={form.trackSets === false}
+              onChange={(event) =>
+                change("trackWeight", event.currentTarget.checked)
+              }
+            />
+            <span>Incluir peso</span>
+          </label>
         </fieldset>
         <div
           class={
@@ -9372,7 +9413,7 @@ function WorkoutModal({
           [exerciseId]: {
             ...(current[exerciseId] || {}),
             [index]: {
-              weight: exerciseTracksSets(exercise)
+              weight: exerciseTracksWeight(exercise)
                 ? parseSessionDecimal(row.weight) > 0
                   ? row.weight
                   : previous
@@ -9452,7 +9493,7 @@ function WorkoutModal({
       for (let index = 0; index < count; index += 1) {
         const row = rows[index] || {};
         rows[index] = {
-          weight: exerciseTracksSets(exercise)
+          weight: exerciseTracksWeight(exercise)
             ? parseSessionDecimal(row.weight) > 0
               ? row.weight
               : previousWeight
@@ -9507,7 +9548,7 @@ function WorkoutModal({
       { length: count },
       (_, index) =>
         completedSets[id]?.[index] &&
-        (!exerciseTracksSets(exercise) ||
+        (!exerciseTracksWeight(exercise) ||
           (Number.isFinite(parseSessionDecimal(sets[id]?.[index]?.weight)) &&
             parseSessionDecimal(sets[id]?.[index]?.weight) >= 0)) &&
         (!exerciseTracksReps(exercise) || Number(sets[id]?.[index]?.reps) > 0),
@@ -9726,6 +9767,7 @@ function WorkoutModal({
         if (!exercise) return null;
         const tracksSets = exerciseTracksSets(exercise);
         const tracksReps = exerciseTracksReps(exercise);
+        const tracksWeight = exerciseTracksWeight(exercise);
         const complete = tracksSets
           ? Array.from(
               { length: setCounts[id] || exercise.sets || 3 },
@@ -9734,14 +9776,16 @@ function WorkoutModal({
             )
               .filter(
                 (item) =>
-                  Number.isFinite(parseSessionDecimal(item?.weight)) &&
-                  parseSessionDecimal(item?.weight) >= 0 &&
+                  (!tracksWeight ||
+                    (Number.isFinite(parseSessionDecimal(item?.weight)) &&
+                      parseSessionDecimal(item?.weight) >= 0)) &&
                   (!tracksReps || Number(item?.reps) > 0),
               )
               .map((item) => ({
                 ...item,
-                weight:
-                  unit === "lb"
+                weight: !tracksWeight
+                  ? 0
+                  : unit === "lb"
                     ? parseSessionDecimal(item.weight) / 2.20462
                     : parseSessionDecimal(item.weight),
               }))
@@ -9758,6 +9802,7 @@ function WorkoutModal({
           cues: exercise.cues || [],
           trackSets: tracksSets,
           trackReps: tracksReps,
+          trackWeight: tracksWeight,
           activityComplete,
           activityValue: activityComplete
             ? parseSessionDecimal(sets[id]?.[0]?.reps) || 0
@@ -9923,6 +9968,7 @@ function WorkoutModal({
 
                     const tracksSets = exerciseTracksSets(exercise);
                     const tracksReps = exerciseTracksReps(exercise);
+                    const tracksWeight = exerciseTracksWeight(exercise);
                     const setCount = tracksSets
                       ? setCounts[id] || exercise.sets || 3
                       : 1;
@@ -9938,7 +9984,7 @@ function WorkoutModal({
                       { length: setCount },
                       (_, setIndex) => Boolean(completedSets[id]?.[setIndex]),
                     ).every(Boolean);
-                    const trackingClass = `${!tracksSets ? " no-set-track" : ""}${!tracksReps ? " no-rep-track" : ""}${!tracksSets && !tracksReps ? " has-duration" : ""}`;
+                    const trackingClass = `${!tracksSets ? " no-set-track" : ""}${!tracksWeight ? " no-weight-track" : ""}${!tracksReps ? " no-rep-track" : ""}${!tracksSets && !tracksReps ? " has-duration" : ""}`;
                     const index = selected.indexOf(id);
 
                     return (
@@ -10161,7 +10207,7 @@ function WorkoutModal({
 
                         <div class={`session-set-head${trackingClass}`}>
                           <span>{tracksSets ? "Serie" : "Actividad"}</span>
-                          {tracksSets && <span>Peso ({unit})</span>}
+                          {tracksSets && tracksWeight && <span>Peso ({unit})</span>}
                           {tracksReps && (
                             <span>{exerciseValueLabel(exercise)}</span>
                           )}
@@ -10189,7 +10235,7 @@ function WorkoutModal({
                           );
 
                           const previousValues = previous
-                            ? `${formatEditableDecimal(previousWeight)} ${unit} × ${previous.reps} ${isTimedPrescription(exercise.reps) ? "s" : "reps"}`
+                            ? `${tracksWeight ? `${formatEditableDecimal(previousWeight)} ${unit} × ` : ""}${previous.reps} ${isTimedPrescription(exercise.reps) ? "s" : "reps"}`
                             : "Sin serie anterior";
 
                           return (
@@ -10199,7 +10245,7 @@ function WorkoutModal({
                             >
                               <span>{tracksSets ? setIndex + 1 : "Hecha"}</span>
 
-                              {tracksSets && (
+                              {tracksSets && tracksWeight && (
                                 <>
                                   <input
                                     aria-label={`Peso serie ${setIndex + 1}`}

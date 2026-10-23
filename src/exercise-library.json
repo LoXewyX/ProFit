@@ -39,7 +39,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/002.webm",
-    "poster": "/exercises/posters/002.webp"
+    "poster": "/exercises/posters/002.webp",
+    "trackWeight": false
   },
   {
     "id": "library-003",
@@ -59,7 +60,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/003.webm",
-    "poster": "/exercises/posters/003.webp"
+    "poster": "/exercises/posters/003.webp",
+    "trackWeight": false
   },
   {
     "id": "library-004",
@@ -81,7 +83,8 @@
     "media": "/exercises/004.webm",
     "poster": "/exercises/posters/004.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-005",
@@ -103,7 +106,8 @@
     "media": "/exercises/005.webm",
     "poster": "/exercises/posters/005.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-006",
@@ -308,7 +312,8 @@
     "media": "/exercises/014.webm",
     "poster": "/exercises/posters/014.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-015",
@@ -331,7 +336,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/015.webm",
-    "poster": "/exercises/posters/015.webp"
+    "poster": "/exercises/posters/015.webp",
+    "trackWeight": false
   },
   {
     "id": "library-016",
@@ -812,7 +818,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/037.webm",
-    "poster": "/exercises/posters/037.webp"
+    "poster": "/exercises/posters/037.webp",
+    "trackWeight": false
   },
   {
     "id": "library-038",
@@ -834,7 +841,8 @@
     "media": "/exercises/038.webm",
     "poster": "/exercises/posters/038.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-039",
@@ -878,7 +886,8 @@
     "media": "/exercises/040.webm",
     "poster": "/exercises/posters/040.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-041",
@@ -945,7 +954,8 @@
     "media": "/exercises/043.webm",
     "poster": "/exercises/posters/043.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-044",
@@ -967,7 +977,8 @@
     "media": "/exercises/044.webm",
     "poster": "/exercises/posters/044.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-045",
@@ -989,7 +1000,8 @@
     "media": "/exercises/045.webm",
     "poster": "/exercises/posters/045.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-046",
@@ -1756,7 +1768,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/080.webm",
-    "poster": "/exercises/posters/080.webp"
+    "poster": "/exercises/posters/080.webp",
+    "trackWeight": false
   },
   {
     "id": "library-081",
@@ -1841,7 +1854,8 @@
     "media": "/exercises/084.webm",
     "poster": "/exercises/posters/084.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-085",
@@ -1861,7 +1875,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/085.webm",
-    "poster": "/exercises/posters/085.webp"
+    "poster": "/exercises/posters/085.webp",
+    "trackWeight": false
   },
   {
     "id": "library-086",
@@ -2150,7 +2165,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/098.webm",
-    "poster": "/exercises/posters/098.webp"
+    "poster": "/exercises/posters/098.webp",
+    "trackWeight": false
   },
   {
     "id": "library-099",
@@ -2278,7 +2294,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/104.webm",
-    "poster": "/exercises/posters/104.webp"
+    "poster": "/exercises/posters/104.webp",
+    "trackWeight": false
   },
   {
     "id": "library-105",
@@ -2298,7 +2315,8 @@
       "Reduce el recorrido si pierdes el control"
     ],
     "media": "/exercises/105.webm",
-    "poster": "/exercises/posters/105.webp"
+    "poster": "/exercises/posters/105.webp",
+    "trackWeight": false
   },
   {
     "id": "library-106",
@@ -2406,7 +2424,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/110.webm",
-    "poster": "/exercises/posters/110.webp"
+    "poster": "/exercises/posters/110.webp",
+    "trackWeight": false
   },
   {
     "id": "library-111",
@@ -2428,7 +2447,8 @@
     "media": "/exercises/111.webm",
     "poster": "/exercises/posters/111.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-112",
@@ -2494,7 +2514,8 @@
     "media": "/exercises/114.webm",
     "poster": "/exercises/posters/114.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-115",
@@ -2649,7 +2670,8 @@
     "media": "/exercises/121.webm",
     "poster": "/exercises/posters/121.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-122",
@@ -2691,7 +2713,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/123.webm",
-    "poster": "/exercises/posters/123.webp"
+    "poster": "/exercises/posters/123.webp",
+    "trackWeight": false
   },
   {
     "id": "library-124",
@@ -2713,7 +2736,8 @@
       "Usa una progresión adecuada a tu nivel"
     ],
     "media": "/exercises/124.webm",
-    "poster": "/exercises/posters/124.webp"
+    "poster": "/exercises/posters/124.webp",
+    "trackWeight": false
   },
   {
     "id": "library-125",
@@ -3307,7 +3331,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/151.webm",
-    "poster": "/exercises/posters/151.webp"
+    "poster": "/exercises/posters/151.webp",
+    "trackWeight": false
   },
   {
     "id": "library-152",
@@ -3352,7 +3377,8 @@
     "media": "/exercises/153.webm",
     "poster": "/exercises/posters/153.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-154",
@@ -3374,7 +3400,8 @@
     "media": "/exercises/154.webm",
     "poster": "/exercises/posters/154.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-155",
@@ -3396,7 +3423,8 @@
     "media": "/exercises/155.webm",
     "poster": "/exercises/posters/155.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-156",
@@ -3418,7 +3446,8 @@
     "media": "/exercises/156.webm",
     "poster": "/exercises/posters/156.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-157",
@@ -3637,7 +3666,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/166.webm",
-    "poster": "/exercises/posters/166.webp"
+    "poster": "/exercises/posters/166.webp",
+    "trackWeight": false
   },
   {
     "id": "library-167",
@@ -3926,7 +3956,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/179.webm",
-    "poster": "/exercises/posters/179.webp"
+    "poster": "/exercises/posters/179.webp",
+    "trackWeight": false
   },
   {
     "id": "library-180",
@@ -3968,7 +3999,8 @@
     "media": "/exercises/181.webm",
     "poster": "/exercises/posters/181.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-182",
@@ -4036,7 +4068,8 @@
     "media": "/exercises/184.webm",
     "poster": "/exercises/posters/184.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-185",
@@ -4058,7 +4091,8 @@
     "media": "/exercises/185.webm",
     "poster": "/exercises/posters/185.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-186",
@@ -4392,7 +4426,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/200.webm",
-    "poster": "/exercises/posters/200.webp"
+    "poster": "/exercises/posters/200.webp",
+    "trackWeight": false
   },
   {
     "id": "library-201",
@@ -4589,7 +4624,8 @@
     "media": "/exercises/209.webm",
     "poster": "/exercises/posters/209.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-210",
@@ -4748,7 +4784,8 @@
     "media": "/exercises/216.webm",
     "poster": "/exercises/posters/216.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-217",
@@ -4968,7 +5005,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/226.webm",
-    "poster": "/exercises/posters/226.webp"
+    "poster": "/exercises/posters/226.webp",
+    "trackWeight": false
   },
   {
     "id": "library-227",
@@ -5010,7 +5048,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/228.webm",
-    "poster": "/exercises/posters/228.webp"
+    "poster": "/exercises/posters/228.webp",
+    "trackWeight": false
   },
   {
     "id": "library-229",
@@ -5140,7 +5179,8 @@
     "media": "/exercises/234.webm",
     "poster": "/exercises/posters/234.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-235",
@@ -5227,7 +5267,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/238.webm",
-    "poster": "/exercises/posters/238.webp"
+    "poster": "/exercises/posters/238.webp",
+    "trackWeight": false
   },
   {
     "id": "library-239",
@@ -5563,7 +5604,8 @@
       "Regresa despacio y evita arquear la espalda"
     ],
     "media": "/exercises/253.webm",
-    "poster": "/exercises/posters/253.webp"
+    "poster": "/exercises/posters/253.webp",
+    "trackWeight": false
   },
   {
     "id": "library-254",
@@ -5628,7 +5670,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/256.webm",
-    "poster": "/exercises/posters/256.webp"
+    "poster": "/exercises/posters/256.webp",
+    "trackWeight": false
   },
   {
     "id": "library-257",
@@ -5648,7 +5691,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/257.webm",
-    "poster": "/exercises/posters/257.webp"
+    "poster": "/exercises/posters/257.webp",
+    "trackWeight": false
   },
   {
     "id": "library-258",
@@ -6229,7 +6273,8 @@
     "media": "/exercises/283.webm",
     "poster": "/exercises/posters/283.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-284",
@@ -6271,7 +6316,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/285.webm",
-    "poster": "/exercises/posters/285.webp"
+    "poster": "/exercises/posters/285.webp",
+    "trackWeight": false
   },
   {
     "id": "library-286",
@@ -6535,7 +6581,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/297.webm",
-    "poster": "/exercises/posters/297.webp"
+    "poster": "/exercises/posters/297.webp",
+    "trackWeight": false
   },
   {
     "id": "library-298",
@@ -6752,7 +6799,8 @@
     "media": "/exercises/307.webm",
     "poster": "/exercises/posters/307.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-308",
@@ -6774,7 +6822,8 @@
     "media": "/exercises/308.webm",
     "poster": "/exercises/posters/308.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-309",
@@ -6794,7 +6843,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/309.webm",
-    "poster": "/exercises/posters/309.webp"
+    "poster": "/exercises/posters/309.webp",
+    "trackWeight": false
   },
   {
     "id": "library-310",
@@ -7335,7 +7385,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/334.webm",
-    "poster": "/exercises/posters/334.webp"
+    "poster": "/exercises/posters/334.webp",
+    "trackWeight": false
   },
   {
     "id": "library-335",
@@ -7470,7 +7521,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/340.webm",
-    "poster": "/exercises/posters/340.webp"
+    "poster": "/exercises/posters/340.webp",
+    "trackWeight": false
   },
   {
     "id": "library-341",
@@ -7510,7 +7562,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/342.webm",
-    "poster": "/exercises/posters/342.webp"
+    "poster": "/exercises/posters/342.webp",
+    "trackWeight": false
   },
   {
     "id": "library-343",
@@ -7963,7 +8016,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/363.webm",
-    "poster": "/exercises/posters/363.webp"
+    "poster": "/exercises/posters/363.webp",
+    "trackWeight": false
   },
   {
     "id": "library-364",
@@ -8005,7 +8059,8 @@
     "media": "/exercises/365.webm",
     "poster": "/exercises/posters/365.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-366",
@@ -8027,7 +8082,8 @@
     "media": "/exercises/366.webm",
     "poster": "/exercises/posters/366.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-367",
@@ -8049,7 +8105,8 @@
     "media": "/exercises/367.webm",
     "poster": "/exercises/posters/367.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-368",
@@ -8173,7 +8230,8 @@
     "media": "",
     "poster": "",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-374",
@@ -8237,7 +8295,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/376.webm",
-    "poster": "/exercises/posters/376.webp"
+    "poster": "/exercises/posters/376.webp",
+    "trackWeight": false
   },
   {
     "id": "library-377",
@@ -8259,7 +8318,8 @@
     "media": "/exercises/377.webm",
     "poster": "/exercises/posters/377.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-378",
@@ -8324,7 +8384,8 @@
     "media": "/exercises/380.webm",
     "poster": "/exercises/posters/380.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-381",
@@ -8527,7 +8588,8 @@
     "media": "/exercises/389.webm",
     "poster": "/exercises/posters/389.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-390",
@@ -8549,7 +8611,8 @@
     "media": "",
     "poster": "/exercises/posters/390.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-391",
@@ -8850,7 +8913,8 @@
     "media": "/exercises/404.webm",
     "poster": "/exercises/posters/404.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-405",
@@ -9006,7 +9070,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/411.webm",
-    "poster": "/exercises/posters/411.webp"
+    "poster": "/exercises/posters/411.webp",
+    "trackWeight": false
   },
   {
     "id": "library-412",
@@ -9028,7 +9093,8 @@
     "media": "/exercises/412.webm",
     "poster": "/exercises/posters/412.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-413",
@@ -9113,7 +9179,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/416.webm",
-    "poster": "/exercises/posters/416.webp"
+    "poster": "/exercises/posters/416.webp",
+    "trackWeight": false
   },
   {
     "id": "library-417",
@@ -9153,7 +9220,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/418.webm",
-    "poster": "/exercises/posters/418.webp"
+    "poster": "/exercises/posters/418.webp",
+    "trackWeight": false
   },
   {
     "id": "library-419",
@@ -9175,7 +9243,8 @@
     "media": "/exercises/419.webm",
     "poster": "/exercises/posters/419.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-420",
@@ -9524,7 +9593,8 @@
       "Acorta el rango si pierdes la estabilidad"
     ],
     "media": "/exercises/436.webm",
-    "poster": "/exercises/posters/436.webp"
+    "poster": "/exercises/posters/436.webp",
+    "trackWeight": false
   },
   {
     "id": "library-437",
@@ -9590,7 +9660,8 @@
     "media": "/exercises/439.webm",
     "poster": "/exercises/posters/439.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-440",
@@ -9726,7 +9797,8 @@
     "media": "/exercises/445.webm",
     "poster": "/exercises/posters/445.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-446",
@@ -9812,7 +9884,8 @@
     "media": "/exercises/449.webm",
     "poster": "/exercises/posters/449.webp",
     "trackSets": false,
-    "trackReps": false
+    "trackReps": false,
+    "trackWeight": false
   },
   {
     "id": "library-450",

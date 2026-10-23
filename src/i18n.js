@@ -1,8 +1,23 @@
 import { options } from 'preact';
 
 // Catalogues and bundled exercise names are loaded from per-language JSON chunks.
-const dictionaries = { ca: {}, en: {}, fr: {}, de: {}, it: {} };
-const lowercaseDictionaries = { ca: {}, en: {}, fr: {}, de: {}, it: {} };
+// Keep this new control translated even when an older locale catalogue is bundled.
+const trackingOptionTranslations = {
+  ca: { 'Incluir peso': 'Incloure el pes' },
+  en: { 'Incluir peso': 'Include weight' },
+  fr: { 'Incluir peso': 'Inclure le poids' },
+  de: { 'Incluir peso': 'Gewicht einbeziehen' },
+  it: { 'Incluir peso': 'Includi il peso' },
+};
+const dictionaries = Object.fromEntries(
+  Object.entries(trackingOptionTranslations).map(([language, entries]) => [language, { ...entries }]),
+);
+const lowercaseDictionaries = Object.fromEntries(
+  Object.entries(trackingOptionTranslations).map(([language, entries]) => [
+    language,
+    Object.fromEntries(Object.entries(entries).map(([source, translated]) => [source.toLocaleLowerCase('es'), translated])),
+  ]),
+);
 const starterExerciseNames = [
   'Press banca con barra', 'Sentadilla con barra', 'Peso muerto rumano', 'Jalón al pecho',
   'Press militar', 'Remo con mancuerna', 'Hip thrust', 'Curl de bíceps', 'Plancha',
