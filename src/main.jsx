@@ -71,6 +71,19 @@ const formatMassValue = (value, unit = "kg") =>
   value === null || value === undefined || value === ""
     ? "—"
     : `${kgToUnit(value, unit).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${unit}`;
+const compositionMeasureType = (measure, key) => {
+  const savedType = measure?.[`${key}Type`];
+  if (savedType === "percent" || savedType === "mass") return savedType;
+  // Older weigh-ins stored fat/water as percentages and muscle/bone as kg.
+  return key === "bodyFat" || key === "water" ? "percent" : "mass";
+};
+const formatCompositionMeasure = (measure, key, unit = "kg") => {
+  const value = measure?.[key];
+  if (value === null || value === undefined || value === "") return "—";
+  if (compositionMeasureType(measure, key) === "mass")
+    return formatMassValue(value, unit);
+  return `${Number(value).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} %`;
+};
 const compressMeasurePhoto = async (file, highResolution = false) => {
   if (!file?.type?.startsWith("image/"))
     throw new Error("Elige un archivo de imagen válido.");
@@ -1334,6 +1347,12 @@ const icons = {
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <circle cx="8.5" cy="9" r="1.5" />
       <path d="m21 15-5-5L5 20" />
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z" />
+      <circle cx="12" cy="13" r="3.5" />
     </>
   ),
   upload: (
@@ -4711,11 +4730,6 @@ function ProfilePage({
     .slice(0, 4);
   const recentMeasures = measures.slice(-3).reverse();
   const monthMuscles = buildMuscleLoad(workouts, exercises, dayOffset(29));
-  const displayMeasure = (value, suffix = "") =>
-    value === null || value === undefined || value === ""
-      ? "—"
-      : `${value}${suffix}`;
-  const displayMass = (value) => formatMassValue(value, unit);
   const bmi =
     currentMeasure?.weight && currentMeasure?.height
       ? currentMeasure.weight / (currentMeasure.height / 100) ** 2
@@ -4940,19 +4954,19 @@ function ProfilePage({
                 </div>
                 <div>
                   <span>Grasa</span>
-                  <strong>{displayMeasure(currentMeasure.bodyFat, "%")}</strong>
+                  <strong>{formatCompositionMeasure(currentMeasure, "bodyFat", unit)}</strong>
                 </div>
                 <div>
                   <span>Agua</span>
-                  <strong>{displayMeasure(currentMeasure.water, "%")}</strong>
+                  <strong>{formatCompositionMeasure(currentMeasure, "water", unit)}</strong>
                 </div>
                 <div>
                   <span>Músculo</span>
-                  <strong>{displayMass(currentMeasure.muscleMass)}</strong>
+                  <strong>{formatCompositionMeasure(currentMeasure, "muscleMass", unit)}</strong>
                 </div>
                 <div>
                   <span>Masa ósea</span>
-                  <strong>{displayMass(currentMeasure.boneMass)}</strong>
+                  <strong>{formatCompositionMeasure(currentMeasure, "boneMass", unit)}</strong>
                 </div>
                 <div>
                   <span>Cintura</span>
@@ -6427,6 +6441,8 @@ function MeasurePhotoAsset({
   alt,
   className = "",
   onMissing,
+  onClick,
+  interactive = false,
 }) {
   const [source, setSource] = useState("");
   const [sourceRevision, setSourceRevision] = useState(0);
@@ -6477,7 +6493,26 @@ function MeasurePhotoAsset({
     };
   }, [assetId, photoUri, sourceRevision]);
   return source ? (
-    <img className={className} src={source} alt={alt} loading="lazy" />
+    <img
+      className={`${className}${interactive ? " measure-photo-expandable" : ""}`}
+      src={source}
+      alt={alt}
+      loading="lazy"
+      onClick={onClick}
+      onKeyDown={
+        interactive
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onClick?.(event);
+              }
+            }
+          : undefined
+      }
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `${alt}. ${translateText("Ampliar foto")}` : undefined}
+    />
   ) : (
     <div className={`${className} measure-photo-loading`} aria-label={alt}>
       <Icon name="image" size={22} />
@@ -6634,7 +6669,19 @@ function MeasurePhotoProgressModal({
   }, [photos, selectedDate, selectedId]);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState(null);
+  const [photoExpanded, setPhotoExpanded] = useState(false);
   const swipeStart = useRef(null);
+  useEffect(() => {
+    if (!photoExpanded) return;
+    const closeOnEscape = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setPhotoExpanded(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [photoExpanded]);
   const photoDeletePrompt = useMemo(
     () => ({
       title: translateText("Eliminar foto de progreso"),
@@ -6650,10 +6697,10 @@ function MeasurePhotoProgressModal({
   const selectedPhoto = selectedIndex >= 0 ? photos[selectedIndex] : null;
   const selectedMetrics = selectedPhoto
     ? [
-        selectedPhoto.bodyFat != null && [translateText("Grasa corporal"), `${selectedPhoto.bodyFat}%`],
-        selectedPhoto.muscleMass != null && [translateText("Masa muscular"), formatMassValue(selectedPhoto.muscleMass, unit)],
-        selectedPhoto.boneMass != null && [translateText("Masa ósea"), formatMassValue(selectedPhoto.boneMass, unit)],
-        selectedPhoto.water != null && [translateText("Agua corporal"), `${selectedPhoto.water}%`],
+        selectedPhoto.bodyFat != null && [translateText("Grasa corporal"), formatCompositionMeasure(selectedPhoto, "bodyFat", unit)],
+        selectedPhoto.muscleMass != null && [translateText("Masa muscular"), formatCompositionMeasure(selectedPhoto, "muscleMass", unit)],
+        selectedPhoto.boneMass != null && [translateText("Masa ósea"), formatCompositionMeasure(selectedPhoto, "boneMass", unit)],
+        selectedPhoto.water != null && [translateText("Agua corporal"), formatCompositionMeasure(selectedPhoto, "water", unit)],
         selectedPhoto.height != null && [translateText("Altura"), `${(heightUnit === "in" ? cmToIn(selectedPhoto.height) : selectedPhoto.height).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`],
         selectedPhoto.waist != null && [translateText("Cintura"), `${(heightUnit === "in" ? cmToIn(selectedPhoto.waist) : selectedPhoto.waist).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`],
         selectedPhoto.chest != null && [translateText("Pecho"), `${(heightUnit === "in" ? cmToIn(selectedPhoto.chest) : selectedPhoto.chest).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`],
@@ -6816,6 +6863,8 @@ function MeasurePhotoProgressModal({
                       photoUri={selectedPhoto.photoUri}
                       alt={`${translateText("Foto de progreso")}: ${dateLabel(selectedPhoto.date)}, ${formatMassValue(selectedPhoto.weight, unit)}`}
                       className="measure-photo-viewer-image"
+                      interactive
+                      onClick={() => setPhotoExpanded(true)}
                       onMissing={() => onMissingPhoto?.(selectedPhoto)}
                     />
                     {photos.length > 1 && (
@@ -6884,6 +6933,34 @@ function MeasurePhotoProgressModal({
             </div>
           )}
         </div>
+        {photoExpanded && selectedPhoto && (
+          <div
+            className="modal-backdrop measure-photo-expanded-lightbox"
+            role="dialog"
+            aria-modal="true"
+            aria-label={translateText("Foto ampliada")}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setPhotoExpanded(false);
+            }}
+          >
+            <button
+              type="button"
+              className="measure-photo-expanded-close icon-button"
+              onClick={() => setPhotoExpanded(false)}
+              aria-label={translateText("Cerrar imagen ampliada")}
+              title={translateText("Cerrar imagen ampliada")}
+            >
+              <Icon name="close" size={22} />
+            </button>
+            <MeasurePhotoAsset
+              assetId={selectedPhoto.photoAssetId}
+              photoUri={selectedPhoto.photoUri}
+              alt={`${translateText("Foto de progreso")}: ${dateLabel(selectedPhoto.date)}`}
+              className="measure-photo-expanded-image"
+              onMissing={() => onMissingPhoto?.(selectedPhoto)}
+            />
+          </div>
+        )}
       </Modal>
       {datePickerOpen && (
         <MeasurePhotoDatePickerModal
@@ -6907,26 +6984,51 @@ function MeasurePhotoProgressModal({
 }
 
 const bodyMeasureSeries = [
-  { id: "weight", label: "Peso", unit: "kg", color: "#b9dc74" },
-  { id: "muscleMass", label: "Masa muscular", unit: "kg", color: "#64c9cf" },
-  { id: "bodyFat", label: "Grasa corporal", unit: "%", color: "#ff9a77" },
-  { id: "water", label: "Agua corporal", unit: "%", color: "#7eaaff" },
-  { id: "boneMass", label: "Masa ósea", unit: "kg", color: "#c0a6f8" },
-  { id: "waist", label: "Cintura", unit: "cm", color: "#e5b85e" },
-  { id: "chest", label: "Pecho", unit: "cm", color: "#e587bc" },
+  { id: "weight", key: "weight", label: "Peso", unit: "kg", dataType: "mass", color: "#b9dc74" },
+  { id: "muscleMass", key: "muscleMass", label: "Masa muscular", unit: "kg", dataType: "mass", composition: true, color: "#398a92" },
+  { id: "bodyFat", key: "bodyFat", label: "Grasa corporal", unit: "kg", dataType: "mass", composition: true, color: "#b86b4f" },
+  { id: "water", key: "water", label: "Agua corporal", unit: "kg", dataType: "mass", composition: true, color: "#4e75b4" },
+  { id: "boneMass", key: "boneMass", label: "Masa ósea", unit: "kg", dataType: "mass", composition: true, color: "#8064b4" },
+  { id: "waist", key: "waist", label: "Cintura", unit: "cm", dataType: "length", color: "#e5b85e" },
+  { id: "chest", key: "chest", label: "Pecho", unit: "cm", dataType: "length", color: "#e587bc" },
 ];
+
+// Convert percentage-based composition values to their equivalent mass in kg
+// for charting, using the body weight recorded in the same weigh-in.
+const compositionMassForChart = (measure, key) => {
+  const value = Number(measure?.[key]);
+  if (!Number.isFinite(value) || value <= 0) return Number.NaN;
+  if (compositionMeasureType(measure, key) === "mass") return value;
+  const bodyWeightKg = Number(measure?.weight);
+  return Number.isFinite(bodyWeightKg) && bodyWeightKg > 0
+    ? (bodyWeightKg * value) / 100
+    : Number.NaN;
+};
 
 function MeasureChart({ measures, unit = "kg", heightUnit = "cm" }) {
   const [period, setPeriod] = useState("30d");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chartConfig, setChartConfig] = useState(() => {
     const saved = loadJson("profit-measure-chart-config", null);
+    const savedHidden = Array.isArray(saved?.hidden) ? saved.hidden : [];
+    const legacyCompositionIds = {
+      muscleMass: ["muscleMass-percent", "muscleMass-mass"],
+      bodyFat: ["bodyFat-percent", "bodyFat-mass"],
+      water: ["water-percent", "water-mass"],
+      boneMass: ["boneMass-percent", "boneMass-mass"],
+    };
     return {
-      hidden: Array.isArray(saved?.hidden)
-        ? saved.hidden.filter((id) =>
-            bodyMeasureSeries.some((series) => series.id === id),
-          )
-        : [],
+      hidden: bodyMeasureSeries
+        .filter((series) => {
+          if (savedHidden.includes(series.id)) return true;
+          const legacyIds = legacyCompositionIds[series.id];
+          // Migrate old settings by hiding a combined measure only when both
+          // of its previous percent/mass variants were hidden.
+          return Boolean(
+            legacyIds && legacyIds.every((id) => savedHidden.includes(id)),
+          );
+        })
+        .map((series) => series.id),
     };
   });
   useEffect(() => {
@@ -6957,7 +7059,9 @@ function MeasureChart({ measures, unit = "kg", heightUnit = "cm" }) {
       .map((measure, dateIndex) => ({
         measure,
         dateIndex,
-        value: Number(measure[series.id]),
+        value: series.composition
+          ? compositionMassForChart(measure, series.key)
+          : Number(measure[series.key || series.id]),
       }))
       .filter(({ value }) => Number.isFinite(value) && value > 0);
     const values = entries.map((entry) => entry.value);
@@ -6976,15 +7080,12 @@ function MeasureChart({ measures, unit = "kg", heightUnit = "cm" }) {
     return { ...series, entries, points, latest: values.at(-1) };
   });
   const formatValue = (series, value) => {
-    const isMass = ["weight", "muscleMass", "boneMass"].includes(series.id);
-    const selectedUnit = isMass
-      ? unit
-      : ["waist", "chest"].includes(series.id)
-        ? heightUnit
-        : series.unit;
+    const isMass = series.dataType === "mass" || series.measureType === "mass";
+    const isLength = series.dataType === "length";
+    const selectedUnit = isMass ? unit : isLength ? heightUnit : series.unit;
     const converted = isMass
       ? kgToUnit(value, unit)
-      : ["waist", "chest"].includes(series.id) && heightUnit === "in"
+      : isLength && heightUnit === "in"
         ? cmToIn(value)
         : value;
     return `${converted.toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${selectedUnit}`;
@@ -7055,7 +7156,7 @@ function MeasureChart({ measures, unit = "kg", heightUnit = "cm" }) {
                   key={series.id}
                 >
                   <i style={{ "--series-color": series.color }} />
-                  {series.label}
+                  {translateText(series.label)}
                 </button>
               );
             })}
@@ -7100,7 +7201,7 @@ function MeasureChart({ measures, unit = "kg", heightUnit = "cm" }) {
                         cy={point.y}
                         r="1.15"
                       >
-                        <title>{`${series.label}: ${formatValue(series, point.value)} · ${dateLabel(point.date)}`}</title>
+                        <title>{`${translateText(series.label)}: ${formatValue(series, point.value)} · ${dateLabel(point.date)}`}</title>
                       </circle>
                     ))}
                   </g>
@@ -7138,7 +7239,7 @@ function MeasureChart({ measures, unit = "kg", heightUnit = "cm" }) {
           return (
             <div key={series.id} class="measure-legend-item">
               <i style={{ "--series-color": series.color }} />
-              <span>{series.label}</span>
+              <span>{translateText(series.label)}</span>
               <strong>
                 {source?.latest ? formatValue(series, source.latest) : "—"}
               </strong>
@@ -11044,27 +11145,105 @@ function MeasureModal({
         ? formatEditableDecimal(cmToIn(cm), 1)
         : formatEditableDecimal(cm, 1)
       : "";
+  const initialCompositionType = (key) => compositionMeasureType(source, key);
+  const initialCompositionValue = (key) => {
+    if (source[key] == null) return "";
+    const type = initialCompositionType(key);
+    return formatEditableDecimal(
+      type === "mass" ? kgToUnit(source[key], unit) : source[key],
+      type === "mass" ? 1 : 2,
+    );
+  };
+  const initialWeightValue = source.weight
+    ? formatEditableDecimal(
+        unit === "lb" ? source.weight * 2.20462 : source.weight,
+        unit === "lb" ? 1 : 6,
+      )
+    : "";
+  // Keep exact canonical values (kg for mass, percentage points for percent)
+  // separate from rounded display strings. This prevents kg/lb conversions
+  // from accumulating rounding error when a weigh-in is opened and saved again.
+  const compositionExactRef = useRef({
+    weightKg:
+      source.weight !== null && source.weight !== undefined && source.weight !== "" && Number.isFinite(Number(source.weight))
+        ? Number(source.weight)
+        : Number.NaN,
+    values: {
+      bodyFat: source.bodyFat ?? null,
+      water: source.water ?? null,
+      muscleMass: source.muscleMass ?? null,
+      boneMass: source.boneMass ?? null,
+    },
+    types: {
+      bodyFat: initialCompositionType("bodyFat"),
+      water: initialCompositionType("water"),
+      muscleMass: initialCompositionType("muscleMass"),
+      boneMass: initialCompositionType("boneMass"),
+    },
+  });
   const [form, setForm] = useState({
     date: current?.date || dateKey(today()),
     dateOfBirth: dateOfBirth || "",
-    weight: source.weight
-      ? formatEditableDecimal(
-          unit === "lb" ? source.weight * 2.20462 : source.weight,
-          unit === "lb" ? 1 : 6,
-        )
-      : "",
+    weight: initialWeightValue,
     waist: showLength(source.waist),
     chest: showLength(source.chest),
     height: showLength(source.height),
     gender: source.gender ?? "",
-    bodyFat: source.bodyFat != null ? formatEditableDecimal(source.bodyFat) : "",
-    water: source.water != null ? formatEditableDecimal(source.water) : "",
-    boneMass: source.boneMass != null ? formatEditableDecimal(kgToUnit(source.boneMass, unit), 1) : "",
-    muscleMass: source.muscleMass != null ? formatEditableDecimal(kgToUnit(source.muscleMass, unit), 1) : "",
+    bodyFatType: initialCompositionType("bodyFat"),
+    waterType: initialCompositionType("water"),
+    muscleMassType: initialCompositionType("muscleMass"),
+    boneMassType: initialCompositionType("boneMass"),
+    bodyFat: initialCompositionValue("bodyFat"),
+    water: initialCompositionValue("water"),
+    boneMass: initialCompositionValue("boneMass"),
+    muscleMass: initialCompositionValue("muscleMass"),
   });
   const currentAge = calculateAge(form.dateOfBirth);
   const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
-  const photoInput = useRef(null);
+  const changeWeightInput = (value) => {
+    set("weight", value);
+    const parsed = value === "" ? Number.NaN : parseLocalizedDecimal(value);
+    compositionExactRef.current.weightKg = Number.isFinite(parsed)
+      ? unitToKg(parsed, unit)
+      : Number.NaN;
+  };
+  const changeCompositionValue = (key, value) => {
+    set(key, value);
+    const type = form[`${key}Type`] || initialCompositionType(key);
+    const parsed = value === "" ? Number.NaN : parseLocalizedDecimal(value);
+    compositionExactRef.current.types[key] = type;
+    compositionExactRef.current.values[key] = Number.isFinite(parsed)
+      ? type === "mass"
+        ? unitToKg(parsed, unit)
+        : parsed
+      : null;
+  };
+  const changeCompositionType = (key, nextType) => {
+    const typeKey = `${key}Type`;
+    const exact = compositionExactRef.current;
+    const previousType = exact.types[key] || form[typeKey] || initialCompositionType(key);
+    if (previousType === nextType) return;
+
+    const value = exact.values[key];
+    const weightKg = exact.weightKg;
+    let nextValue = "";
+    let nextCanonicalValue = null;
+    if (value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0 && Number.isFinite(weightKg) && weightKg > 0) {
+      if (previousType === "percent" && nextType === "mass") {
+        nextCanonicalValue = (weightKg * Number(value)) / 100;
+        nextValue = formatEditableDecimal(kgToUnit(nextCanonicalValue, unit), 1);
+      } else if (previousType === "mass" && nextType === "percent") {
+        nextCanonicalValue = (Number(value) / weightKg) * 100;
+        nextValue = formatEditableDecimal(nextCanonicalValue, 2);
+      }
+    }
+    // Keep the unrounded converted result for subsequent type switches.
+    exact.types[key] = nextType;
+    exact.values[key] = nextCanonicalValue;
+    setForm((prev) => ({ ...prev, [typeKey]: nextType, [key]: nextValue }));
+  };
+  const photoCameraInput = useRef(null);
+  const photoGalleryInput = useRef(null);
   const [photoBlob, setPhotoBlob] = useState(null);
   const [photoUri, setPhotoUri] = useState(current?.photoUri || "");
   const pendingPhotoUri = useRef("");
@@ -11180,10 +11359,10 @@ function MeasureModal({
           const fields = [
             ["weight", 1],
             ["height", minHeight, maxHeight],
-            ["bodyFat", 0, 75],
-            ["water", 0, 100],
-            ["muscleMass", 0],
-            ["boneMass", 0],
+            ["bodyFat", 0, form.bodyFatType === "percent" ? 75 : undefined],
+            ["water", 0, form.waterType === "percent" ? 100 : undefined],
+            ["muscleMass", 0, form.muscleMassType === "percent" ? 100 : undefined],
+            ["boneMass", 0, form.boneMassType === "percent" ? 100 : undefined],
             ["waist", 0],
             ["chest", 0],
           ];
@@ -11198,7 +11377,6 @@ function MeasureModal({
               return;
             }
           }
-          const enteredWeight = parseLocalizedDecimal(form.weight);
           setSaving(true);
           try {
             const measureId = current?.id || uid();
@@ -11223,17 +11401,21 @@ function MeasureModal({
               id: measureId,
               date: form.date,
               dateOfBirth: form.dateOfBirth,
-              weight: unit === "lb" ? enteredWeight / 2.20462 : enteredWeight,
+              weight: Number.isFinite(compositionExactRef.current.weightKg)
+                ? compositionExactRef.current.weightKg
+                : unitToKg(form.weight, unit),
               waist: form.waist ? toCm(form.waist) : null,
               chest: form.chest ? toCm(form.chest) : null,
               height: toCm(form.height),
               gender: form.gender,
-              bodyFat: form.bodyFat ? parseLocalizedDecimal(form.bodyFat) : null,
-              water: form.water ? parseLocalizedDecimal(form.water) : null,
-              boneMass:
-                form.boneMass !== "" ? unitToKg(form.boneMass, unit) : null,
-              muscleMass:
-                form.muscleMass !== "" ? unitToKg(form.muscleMass, unit) : null,
+              bodyFatType: form.bodyFatType,
+              bodyFat: form.bodyFat !== "" ? compositionExactRef.current.values.bodyFat : null,
+              waterType: form.waterType,
+              water: form.water !== "" ? compositionExactRef.current.values.water : null,
+              boneMassType: form.boneMassType,
+              boneMass: form.boneMass !== "" ? compositionExactRef.current.values.boneMass : null,
+              muscleMassType: form.muscleMassType,
+              muscleMass: form.muscleMass !== "" ? compositionExactRef.current.values.muscleMass : null,
               ...(savedPhotoUri ? { photoUri: savedPhotoUri } : {}),
               ...(photoAssetId ? { photoAssetId } : {}),
             });
@@ -11275,7 +11457,7 @@ function MeasureModal({
               step="0.1"
               placeholder={`0${decimalSeparator()}0`}
               value={form.weight}
-              onInput={(e) => set("weight", e.currentTarget.value)}
+              onInput={(e) => changeWeightInput(e.currentTarget.value)}
             />
           </label>
         </div>
@@ -11333,67 +11515,111 @@ function MeasureModal({
         </div>
         <div class="measure-form-section">
           <div class="eyebrow">COMPOSICIÓN CORPORAL · OPCIONAL</div>
-          <div class="form-row three">
-            <label>
-              Grasa (%)
-              <input
-                name="bodyFat"
-                type="text"
-                inputMode="decimal"
-                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
-                min="0"
-                max="75"
-                step="0.1"
-                value={form.bodyFat}
-                onInput={(e) => set("bodyFat", e.currentTarget.value)}
-                placeholder="—"
-              />
+          <div className="measure-composition-grid">
+            <label className="measure-composition-field">
+              <span>{translateText("Grasa corporal")}</span>
+              <div className="measure-composition-controls">
+                <input
+                  name="bodyFat"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
+                  min="0"
+                  max={form.bodyFatType === "percent" ? 75 : undefined}
+                  step="0.1"
+                  value={form.bodyFat}
+                  onInput={(e) => changeCompositionValue("bodyFat", e.currentTarget.value)}
+                  placeholder="—"
+                />
+                <select
+                  aria-label={`${translateText("Unidad de medida")}: ${translateText("Grasa corporal")}`}
+                  value={form.bodyFatType}
+                  onChange={(e) => changeCompositionType("bodyFat", e.currentTarget.value)}
+                >
+                  <option value="percent">%</option>
+                  <option value="mass">{unit}</option>
+                </select>
+              </div>
             </label>
-            <label>
-              Agua (%)
-              <input
-                name="water"
-                type="text"
-                inputMode="decimal"
-                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
-                min="0"
-                max="100"
-                step="0.1"
-                value={form.water}
-                onInput={(e) => set("water", e.currentTarget.value)}
-                placeholder="—"
-              />
+            <label className="measure-composition-field">
+              <span>{translateText("Agua corporal")}</span>
+              <div className="measure-composition-controls">
+                <input
+                  name="water"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
+                  min="0"
+                  max={form.waterType === "percent" ? 100 : undefined}
+                  step="0.1"
+                  value={form.water}
+                  onInput={(e) => changeCompositionValue("water", e.currentTarget.value)}
+                  placeholder="—"
+                />
+                <select
+                  aria-label={`${translateText("Unidad de medida")}: ${translateText("Agua corporal")}`}
+                  value={form.waterType}
+                  onChange={(e) => changeCompositionType("water", e.currentTarget.value)}
+                >
+                  <option value="percent">%</option>
+                  <option value="mass">{unit}</option>
+                </select>
+              </div>
             </label>
-            <label>
-              Músculo ({unit})
-              <input
-                name="muscleMass"
-                type="text"
-                inputMode="decimal"
-                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
-                min="0"
-                step="0.1"
-                value={form.muscleMass}
-                onInput={(e) => set("muscleMass", e.currentTarget.value)}
-                placeholder="—"
-              />
+            <label className="measure-composition-field">
+              <span>{translateText("Masa muscular")}</span>
+              <div className="measure-composition-controls">
+                <input
+                  name="muscleMass"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
+                  min="0"
+                  max={form.muscleMassType === "percent" ? 100 : undefined}
+                  step="0.1"
+                  value={form.muscleMass}
+                  onInput={(e) => changeCompositionValue("muscleMass", e.currentTarget.value)}
+                  placeholder="—"
+                />
+                <select
+                  aria-label={`${translateText("Unidad de medida")}: ${translateText("Masa muscular")}`}
+                  value={form.muscleMassType}
+                  onChange={(e) => changeCompositionType("muscleMass", e.currentTarget.value)}
+                >
+                  <option value="percent">%</option>
+                  <option value="mass">{unit}</option>
+                </select>
+              </div>
             </label>
-            <label>
-              Masa ósea ({unit})
-              <input
-                name="boneMass"
-                type="text"
-                inputMode="decimal"
-                pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
-                min="0"
-                step="0.1"
-                value={form.boneMass}
-                onInput={(e) => set("boneMass", e.currentTarget.value)}
-                placeholder="—"
-              />
+            <label className="measure-composition-field">
+              <span>{translateText("Masa ósea")}</span>
+              <div className="measure-composition-controls">
+                <input
+                  name="boneMass"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)"
+                  min="0"
+                  max={form.boneMassType === "percent" ? 100 : undefined}
+                  step="0.1"
+                  value={form.boneMass}
+                  onInput={(e) => changeCompositionValue("boneMass", e.currentTarget.value)}
+                  placeholder="—"
+                />
+                <select
+                  aria-label={`${translateText("Unidad de medida")}: ${translateText("Masa ósea")}`}
+                  value={form.boneMassType}
+                  onChange={(e) => changeCompositionType("boneMass", e.currentTarget.value)}
+                >
+                  <option value="percent">%</option>
+                  <option value="mass">{unit}</option>
+                </select>
+              </div>
             </label>
+          </div>
+          <div className="form-row">
             <label>
-              Cintura ({heightUnit})
+              {translateText("Cintura")} ({heightUnit})
               <input
                 name="waist"
                 type="text"
@@ -11407,7 +11633,7 @@ function MeasureModal({
               />
             </label>
             <label>
-              Pecho ({heightUnit})
+              {translateText("Pecho")} ({heightUnit})
               <input
                 name="chest"
                 type="text"
@@ -11437,40 +11663,39 @@ function MeasureModal({
             </div>
           </div>
           <input
-            ref={photoInput}
+            ref={photoCameraInput}
             className="visually-hidden"
             type="file"
             accept="image/*"
             capture="environment"
-            aria-label={translateText("Hacer o elegir una foto")}
+            aria-label={translateText("Cámara")}
+            disabled={photoProcessing || saving}
+            onChange={selectProgressPhoto}
+          />
+          <input
+            ref={photoGalleryInput}
+            className="visually-hidden"
+            type="file"
+            accept="image/*"
+            aria-label={translateText("Galería")}
             disabled={photoProcessing || saving}
             onChange={selectProgressPhoto}
           />
           <div className="measure-photo-actions">
             <div className="measure-photo-frame-wrap">
-              <button
-                type="button"
+              <div
                 className={`measure-photo-frame ${photoPreview ? "has-photo" : ""}`}
-                disabled={photoProcessing || saving}
-                onClick={() => photoInput.current?.click()}
+                role="group"
                 aria-label={translateText(
                   photoPreview ? "Cambiar foto" : "Hacer o elegir una foto",
                 )}
               >
                 {photoPreview ? (
-                  <>
-                    <img
-                      className="measure-photo-form-preview"
-                      src={photoPreview}
-                      alt={translateText("Vista previa de la foto de progreso")}
-                    />
-                    <span className="measure-photo-frame-change">
-                      <Icon name="image" size={14} />
-                      {photoProcessing
-                        ? translateText("Preparando foto…")
-                        : translateText("Cambiar foto")}
-                    </span>
-                  </>
+                  <img
+                  className="measure-photo-form-preview"
+                  src={photoPreview}
+                  alt={translateText("Vista previa de la foto de progreso")}
+                />
                 ) : (
                   <span className="measure-photo-form-empty">
                     <Icon name="image" size={23} />
@@ -11479,10 +11704,36 @@ function MeasureModal({
                         ? translateText("Preparando foto…")
                         : translateText("Hacer o elegir una foto")}
                     </strong>
-                    <small>{translateText("Toca para añadir una imagen")}</small>
+                    <small>{translateText("Usa los iconos para añadir una imagen")}</small>
                   </span>
                 )}
-              </button>
+              </div>
+              <div
+                className="measure-photo-source-actions"
+                role="group"
+                aria-label={translateText("Opciones de foto")}
+              >
+                <button
+                  type="button"
+                  className="measure-photo-source-icon icon-button"
+                  title={translateText("Cámara")}
+                  aria-label={translateText("Cámara")}
+                  disabled={photoProcessing || saving}
+                  onClick={() => photoCameraInput.current?.click()}
+                >
+                  <Icon name="camera" size={17} />
+                </button>
+                <button
+                  type="button"
+                  className="measure-photo-source-icon icon-button"
+                  title={translateText("Galería")}
+                  aria-label={translateText("Galería")}
+                  disabled={photoProcessing || saving}
+                  onClick={() => photoGalleryInput.current?.click()}
+                >
+                  <Icon name="image" size={17} />
+                </button>
+              </div>
               {photoPreview && (
                 <button
                   type="button"
@@ -11635,12 +11886,14 @@ function MeasureHistoryModal({
                       </span>
                       <small>
                         {[
-                          measure.bodyFat && `${translateText("Grasa")}: ${measure.bodyFat}%`,
-                          measure.water && `${translateText("Agua")}: ${measure.water}%`,
-                          measure.muscleMass &&
-                            `${translateText("Masa muscular")}: ${formatMassValue(measure.muscleMass, unit)}`,
-                          measure.boneMass &&
-                            `${translateText("Masa ósea")}: ${formatMassValue(measure.boneMass, unit)}`,
+                          measure.bodyFat != null &&
+                            `${translateText("Grasa")}: ${formatCompositionMeasure(measure, "bodyFat", unit)}`,
+                          measure.water != null &&
+                            `${translateText("Agua")}: ${formatCompositionMeasure(measure, "water", unit)}`,
+                          measure.muscleMass != null &&
+                            `${translateText("Masa muscular")}: ${formatCompositionMeasure(measure, "muscleMass", unit)}`,
+                          measure.boneMass != null &&
+                            `${translateText("Masa ósea")}: ${formatCompositionMeasure(measure, "boneMass", unit)}`,
                           measure.waist &&
                             `${translateText("Cintura")}: ${(heightUnit === "in" ? cmToIn(measure.waist) : measure.waist).toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} ${heightUnit}`,
                           measure.chest &&
