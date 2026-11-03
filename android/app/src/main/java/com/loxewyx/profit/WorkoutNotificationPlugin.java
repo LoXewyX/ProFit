@@ -79,18 +79,19 @@ public class WorkoutNotificationPlugin extends Plugin {
                 importance
             );
             channel.setDescription(NotificationLanguage.text(language,
-                "Cronómetro de la sesión activa de ProFit",
-                "Cronòmetre de la sessió activa de ProFit",
-                "Timer for your active ProFit workout"));
+                "Aviso de la sesión activa de ProFit",
+                "Avís de la sessió activa de ProFit",
+                "Notification for your active ProFit workout"));
             channel.setShowBadge(false);
             NotificationBranding.configureNotificationChannel(channel, context);
             manager.createNotificationChannel(channel);
         }
 
         String name = call.getData().optString("title", "Entrenamiento");
-        long elapsedMs = Math.max(0L, call.getData().optLong("elapsedMs", 0L));
         boolean paused = call.getData().optBoolean("paused", false);
-        long chronometerBase = System.currentTimeMillis() - elapsedMs;
+        String status = call.getData().optString("status", paused ? "paused" : "active");
+        boolean resting = "resting".equalsIgnoreCase(status);
+        boolean stopped = paused || resting;
         Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
         PendingIntent contentIntent = launchIntent == null ? null : PendingIntent.getActivity(
             context,
@@ -102,29 +103,25 @@ public class WorkoutNotificationPlugin extends Plugin {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_profit)
             .setLargeIcon(NotificationBranding.appIcon(context))
-            .setContentTitle(paused
-                ? NotificationLanguage.text(language, "Entrenamiento en pausa", "Entrenament en pausa", "Workout paused")
-                : NotificationLanguage.text(language, "Entrenamiento en curso", "Entrenament en curs", "Workout in progress"))
+            .setContentTitle(resting
+                ? NotificationLanguage.text(language, "Descanso entre series", "Descans entre sèries", "Resting between sets")
+                : paused
+                    ? NotificationLanguage.text(language, "Entrenamiento en pausa", "Entrenament en pausa", "Workout paused")
+                    : NotificationLanguage.text(language, "Entrenamiento en curso", "Entrenament en curs", "Workout in progress"))
             .setContentText(name)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setShowWhen(true)
-            .setWhen(chronometerBase)
-            .setUsesChronometer(!paused)
+            .setShowWhen(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-
-        if (paused) {
-            builder.setContentText(name + " · " + formatElapsed(elapsedMs));
-        }
         if (contentIntent != null) {
             builder.setContentIntent(contentIntent);
         }
 
         Intent actionIntent = new Intent(context, MainActivity.class)
             .setAction(context.getPackageName() + ".WORKOUT_NOTIFICATION_ACTION")
-            .putExtra(ACTION_EXTRA, paused ? ACTION_RESUME : ACTION_PAUSE)
+            .putExtra(ACTION_EXTRA, stopped ? ACTION_RESUME : ACTION_PAUSE)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent workoutAction = PendingIntent.getActivity(
             context,
@@ -134,7 +131,7 @@ public class WorkoutNotificationPlugin extends Plugin {
         );
         builder.addAction(new NotificationCompat.Action.Builder(
             R.drawable.ic_stat_dumbbell,
-            paused
+            stopped
                 ? NotificationLanguage.text(language, "Reanudar", "Reprendre", "Resume")
                 : NotificationLanguage.text(language, "Pausar", "Pausar", "Pause"),
             workoutAction
@@ -198,13 +195,4 @@ public class WorkoutNotificationPlugin extends Plugin {
         call.resolve();
     }
 
-    private String formatElapsed(long elapsedMs) {
-        long seconds = elapsedMs / 1000L;
-        long hours = seconds / 3600L;
-        long minutes = (seconds % 3600L) / 60L;
-        long remainder = seconds % 60L;
-        return hours > 0
-            ? String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, remainder)
-            : String.format(java.util.Locale.ROOT, "%02d:%02d", minutes, remainder);
-    }
 }

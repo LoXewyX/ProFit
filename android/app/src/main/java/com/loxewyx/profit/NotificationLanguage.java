@@ -30,7 +30,8 @@ final class NotificationLanguage {
             case "Remember to include protein in your diet today.": values = new String[] {"Pensez à inclure des protéines dans votre alimentation aujourd’hui.", "Denk daran, heute Protein in deine Ernährung einzubauen.", "Ricordati di includere proteine nella tua alimentazione di oggi."}; break;
             case "Workout in progress": values = new String[] {"Entraînement en cours", "Training läuft", "Allenamento in corso"}; break;
             case "Workout paused": values = new String[] {"Entraînement en pause", "Training pausiert", "Allenamento in pausa"}; break;
-            case "Timer for your active ProFit workout": values = new String[] {"Chronomètre de votre séance ProFit en cours", "Timer für dein aktuelles ProFit-Training", "Timer della sessione ProFit in corso"}; break;
+            case "Resting between sets": values = new String[] {"Repos entre les séries", "Pause zwischen den Sätzen", "Recupero tra le serie"}; break;
+            case "Notification for your active ProFit workout": values = new String[] {"Notification pour votre séance ProFit en cours", "Benachrichtigung für dein aktuelles ProFit-Training", "Notifica per la sessione ProFit in corso"}; break;
             case "Resume": values = new String[] {"Reprendre", "Fortsetzen", "Riprendi"}; break;
             case "Pause": values = new String[] {"Mettre en pause", "Pausieren", "Pausa"}; break;
             default: return english;

@@ -1204,8 +1204,20 @@ function loadExerciseLibrary() {
         const defaultDefinition =
           bundledExerciseById.get(refreshed.id) ||
           legacySeedExerciseById.get(refreshed.id);
+        const bundledMuscleVersion = Number(
+          defaultDefinition?.muscleMapVersion || 0,
+        );
+        const refreshedMuscles =
+          bundledMuscleVersion > Number(refreshed.muscleMapVersion || 0)
+            ? {
+                ...refreshed,
+                muscle: defaultDefinition.muscle,
+                secondary: [...(defaultDefinition.secondary || [])],
+                muscleMapVersion: bundledMuscleVersion,
+              }
+            : refreshed;
         return {
-          ...refreshed,
+          ...refreshedMuscles,
           ...(exercise.trackWeight === undefined &&
           defaultDefinition?.trackWeight !== undefined
             ? { trackWeight: defaultDefinition.trackWeight }
@@ -8290,16 +8302,47 @@ async function createVideoPoster(file) {
 const standardSecondaryMuscles = [
   "Pecho",
   "Espalda",
+  "Dorsales",
+  "Romboides",
+  "Redondo mayor",
+  "Zona lumbar",
+  "Erectores espinales",
   "Hombros",
+  "Deltoides anterior",
+  "Deltoides lateral",
+  "Deltoides posterior",
+  "Trapecio superior",
+  "Trapecio medio",
+  "Trapecio inferior",
+  "Elevador de la escápula",
+  "Serrato anterior",
   "Bíceps",
+  "Braquial",
+  "Bíceps femoral",
   "Tríceps",
   "Antebrazo",
+  "Braquiorradial",
+  "Flexores de muñeca",
+  "Extensores de muñeca",
   "Abdominales",
+  "Transverso abdominal",
+  "Oblicuos",
+  "Flexores de cadera",
   "Glúteos",
+  "Glúteo mayor",
+  "Glúteo medio",
   "Cuádriceps",
+  "Recto femoral",
+  "Vasto medial",
+  "Vasto lateral",
   "Isquiotibiales",
+  "Gastrocnemio",
+  "Sóleo",
   "Pantorrillas",
+  "Aductores",
   "Cuello",
+  "Esternocleidomastoideo",
+  "Esplenio de la cabeza",
 ];
 
 function MusclePicklist({ value, onChange, onDeleteCustom }) {
@@ -8382,7 +8425,7 @@ function MusclePicklist({ value, onChange, onDeleteCustom }) {
               aria-label={`Quitar ${muscle}`}
               title={`Quitar ${muscle}`}
             >
-              {muscle}
+              {translateText(muscle)}
               <Icon name="close" size={12} />
             </button>
           ))}
@@ -8432,7 +8475,7 @@ function MusclePicklist({ value, onChange, onDeleteCustom }) {
                   checked={value.includes(muscle)}
                   onChange={() => toggle(muscle)}
                 />
-                <span>{muscle}</span>
+                <span>{translateText(muscle)}</span>
               </label>
               {custom.includes(muscle) && (
                 <button
@@ -9151,7 +9194,7 @@ function WorkoutModal({
   onCancel,
   onFinish,
   unit,
-  nativeTimerAvailable,
+  nativeNotificationAvailable,
 }) {
   const startTime = session.startedAt;
   const storedDraft = loadJson("profit-active-draft", null);
@@ -9165,6 +9208,7 @@ function WorkoutModal({
         setCounts: storedDraft.setCounts || {},
         restSeconds: storedDraft.restSeconds || {},
         restEndsAt: storedDraft.restEndsAt || {},
+        restAutoPausedWorkout: Boolean(storedDraft.restAutoPausedWorkout),
         completedSets: storedDraft.completedSets || {},
         exerciseNotes: storedDraft.exerciseNotes || {},
       }
@@ -9234,6 +9278,9 @@ function WorkoutModal({
   );
   const [restEndsAt, setRestEndsAt] = useState(() =>
     draftMatches ? savedDraft.restEndsAt || {} : {},
+  );
+  const [restAutoPausedWorkout, setRestAutoPausedWorkout] = useState(() =>
+    draftMatches ? Boolean(savedDraft.restAutoPausedWorkout) : false,
   );
   const finishedRestTimers = useRef(new Set());
   const [completedSets, setCompletedSets] = useState(() =>
@@ -9322,6 +9369,12 @@ function WorkoutModal({
   const liveElapsedMs = elapsedAt(now);
   const elapsedSeconds =
     finalElapsedSeconds ?? Math.floor(liveElapsedMs / 1000);
+  const activeRestId = selected.find(
+    (id) => Number(restEndsAt[id]) > now,
+  ) || null;
+  const activeRestRemaining = activeRestId
+    ? Math.max(0, Math.ceil((Number(restEndsAt[activeRestId]) - now) / 1000))
+    : 0;
   useEffect(() => {
     const updateClock = () => setNow(Date.now());
     const interval = window.setInterval(updateClock, 1000);
@@ -9331,6 +9384,36 @@ function WorkoutModal({
       document.removeEventListener("visibilitychange", updateClock);
     };
   }, []);
+  useEffect(() => {
+    if (openExerciseOptions === null) return;
+    const closeOnOutsidePointer = (event) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest(".session-entry-actions")
+      )
+        return;
+      setOpenExerciseOptions(null);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () =>
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [openExerciseOptions]);
+  useEffect(() => {
+    const handleNotificationResume = (event) => {
+      if (event.detail?.action !== "resume" || !activeRestId) return;
+      setRestEndsAt((current) => ({ ...current, [activeRestId]: 0 }));
+      setRestAutoPausedWorkout(false);
+    };
+    window.addEventListener(
+      "profit-workout-notification-action",
+      handleNotificationResume,
+    );
+    return () =>
+      window.removeEventListener(
+        "profit-workout-notification-action",
+        handleNotificationResume,
+      );
+  }, [activeRestId]);
   useEffect(() => {
     const expired = Object.entries(restEndsAt).filter(
       ([, endsAt]) => Number(endsAt) > 0 && Number(endsAt) <= now,
@@ -9355,7 +9438,11 @@ function WorkoutModal({
       });
       return changed ? next : current;
     });
-  }, [now, restEndsAt]);
+    if (restAutoPausedWorkout && session.paused) {
+      setRestAutoPausedWorkout(false);
+      onResume();
+    }
+  }, [now, restEndsAt, restAutoPausedWorkout, session.paused, onResume]);
   useEffect(() => {
     localStorage.setItem(
       "profit-active-draft",
@@ -9367,6 +9454,7 @@ function WorkoutModal({
         setCounts,
         restSeconds,
         restEndsAt,
+        restAutoPausedWorkout,
         completedSets,
         exerciseNotes,
         lastNoticeMinute,
@@ -9380,6 +9468,7 @@ function WorkoutModal({
     setCounts,
     restSeconds,
     restEndsAt,
+    restAutoPausedWorkout,
     completedSets,
     exerciseNotes,
     lastNoticeMinute,
@@ -9494,6 +9583,7 @@ function WorkoutModal({
         (_, rowIndex) =>
           rowIndex === index || Boolean(completedSets[exerciseId]?.[rowIndex]),
       ).every(Boolean);
+    if (checked && !wasChecked) startRestTimer(exerciseId);
     if (completingExercise) playExerciseCompletedSound();
     setCompletedSets((current) => ({
       ...current,
@@ -9562,6 +9652,7 @@ function WorkoutModal({
       return;
     }
     playExerciseCompletedSound();
+    if (!exerciseTracksSets(exercise)) startRestTimer(exerciseId);
     const previous = lastPerformance[exerciseId];
     const previousActivity =
       lastActivityTime[exerciseId] ||
@@ -9761,15 +9852,34 @@ function WorkoutModal({
     }
     setSetCounts((current) => ({ ...current, [id]: nextCount }));
   };
-  const toggleRestTimer = (id) => {
-    const activeUntil = Number(restEndsAt[id]) || 0;
-    if (activeUntil > Date.now()) {
-      setRestEndsAt((current) => ({ ...current, [id]: 0 }));
-      return;
-    }
+  const startRestTimer = (id) => {
     const seconds = safeRestSeconds(restSeconds[id], 60);
     if (seconds <= 0) return;
-    setRestEndsAt((current) => ({ ...current, [id]: Date.now() + seconds * 1000 }));
+    const resumeWorkoutAfterRest = restAutoPausedWorkout || !session.paused;
+    if (!session.paused) onPause(elapsedAt(Date.now()), "resting");
+    setRestAutoPausedWorkout(resumeWorkoutAfterRest);
+    const endsAt = Date.now() + seconds * 1000;
+    setRestEndsAt((current) => ({
+      ...Object.fromEntries(Object.keys(current).map((key) => [key, 0])),
+      [id]: endsAt,
+    }));
+  };
+  const cancelRestTimer = (id) => {
+    if (!(Number(restEndsAt[id]) > Date.now())) return;
+    setRestEndsAt((current) => ({ ...current, [id]: 0 }));
+    const resumeWorkout = restAutoPausedWorkout && session.paused;
+    setRestAutoPausedWorkout(false);
+    if (resumeWorkout) onResume();
+  };
+  const toggleSessionPause = () => {
+    if (session.paused) {
+      if (activeRestId)
+        setRestEndsAt((current) => ({ ...current, [activeRestId]: 0 }));
+      setRestAutoPausedWorkout(false);
+      onResume();
+      return;
+    }
+    onPause(elapsedAt(Date.now()));
   };
   const removeExercise = (id) => {
     setSelected((current) => current.filter((item) => item !== id));
@@ -9932,10 +10042,24 @@ function WorkoutModal({
       exercises: entries,
     });
   };
+  const resizeSessionComment = (textarea) => {
+    if (!textarea) return;
+    const maxHeight = 148;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+    textarea.style.overflowY =
+      textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+  };
 
   return (
     <>
-      <Modal title="Entrenamiento" onClose={() => {}} wide dismissible={false}>
+      <Modal
+        title="Entrenamiento"
+        onClose={() => {}}
+        wide
+        dismissible={false}
+        className="workout-session-modal"
+      >
         <div class="workout-modal">
           {!confirmDuration ? (
             <>
@@ -9949,10 +10073,20 @@ function WorkoutModal({
                     >
                       <Icon name="clock" size={15} />
                       <strong>{formatElapsed(elapsedSeconds)}</strong>
-                      <span>
-                        {session.paused ? "en pausa" : "transcurrido"}
-                      </span>
                     </div>
+
+                    {activeRestId && (
+                      <button
+                        type="button"
+                        class="session-rest-countdown"
+                        aria-label={`Cancelar descanso de ${formatElapsed(activeRestRemaining)} y continuar el entrenamiento`}
+                        title="Toca para cancelar el descanso y continuar"
+                        onClick={() => cancelRestTimer(activeRestId)}
+                      >
+                        <Icon name="clock" size={14} />
+                        <strong>{formatElapsed(activeRestRemaining)}</strong>
+                      </button>
+                    )}
 
                     <Button
                       variant={session.paused ? "primary" : "quiet"}
@@ -9962,26 +10096,22 @@ function WorkoutModal({
                           ? "Continuar entrenamiento"
                           : "Pausar entrenamiento"
                       }
-                      onClick={() =>
-                        session.paused
-                          ? onResume()
-                          : onPause(elapsedAt(Date.now()))
-                      }
+                      onClick={toggleSessionPause}
                     >
                       <Icon
                         name={session.paused ? "play" : "pause"}
                         size={14}
                       />
-                      {session.paused ? "Continuar" : "Pausar entreno"}
                     </Button>
 
                     <button
                       type="button"
                       class="session-cancel-button"
+                      aria-label="Cancelar sesión"
+                      title="Cancelar sesión"
                       onClick={onCancel}
                     >
                       <Icon name="trash" size={14} />
-                      Cancelar
                     </button>
 
                     {notificationPermission === "default" &&
@@ -10011,12 +10141,7 @@ function WorkoutModal({
                       )}
 
                     {Capacitor.getPlatform() === "android" &&
-                      (nativeTimerAvailable ? (
-                        <span class="notification-enabled android-timer-status">
-                          <Icon name="clock" size={12} />
-                          Cronómetro del sistema
-                        </span>
-                      ) : (
+                      !nativeNotificationAvailable && (
                         <button
                           type="button"
                           class="notification-enable"
@@ -10025,7 +10150,7 @@ function WorkoutModal({
                           <Icon name="settings" size={13} />
                           Activar avisos
                         </button>
-                      ))}
+                      )}
                   </div>
                 </div>
 
@@ -10078,10 +10203,6 @@ function WorkoutModal({
                       routine?.exerciseSettings?.[id]?.reps ?? exercise.reps;
                     const targetMinutes =
                       Number(routine?.exerciseSettings?.[id]?.targetMinutes) || 0;
-                    const restRemaining = Math.max(
-                      0,
-                      Math.ceil(((Number(restEndsAt[id]) || 0) - now) / 1000),
-                    );
                     const allComplete = Array.from(
                       { length: setCount },
                       (_, setIndex) => Boolean(completedSets[id]?.[setIndex]),
@@ -10191,17 +10312,55 @@ function WorkoutModal({
                           </div>
                         )}
 
+                        {tracksSets && (
+                          <div class="session-rest-control">
+                            <label>
+                              <Icon name="clock" size={14} />
+                              <span>Descanso</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="3600"
+                                step="5"
+                                inputMode="numeric"
+                                value={String(restSeconds[id] ?? 60)}
+                                aria-label={`Descanso entre series para ${exercise.name}, en segundos`}
+                                onInput={(event) => {
+                                  const value = event.currentTarget.value;
+                                  setRestSeconds((current) => ({
+                                    ...current,
+                                    [id]: value,
+                                  }));
+                                  if (Number(restEndsAt[id]) > Date.now())
+                                    cancelRestTimer(id);
+                                }}
+                                onBlur={(event) =>
+                                  setRestSeconds((current) => ({
+                                    ...current,
+                                    [id]: safeRestSeconds(
+                                      event.currentTarget.value,
+                                    ),
+                                  }))
+                                }
+                              />
+                              <small>s</small>
+                            </label>
+                          </div>
+                        )}
+
                         <div class="session-note-editor">
                           <textarea
                             rows="2"
                             maxLength="500"
+                            ref={resizeSessionComment}
                             value={exerciseNotes[id] || ""}
-                            onInput={(event) =>
+                            onInput={(event) => {
+                              resizeSessionComment(event.currentTarget);
                               setExerciseNotes((current) => ({
                                 ...current,
                                 [id]: event.currentTarget.value,
-                              }))
-                            }
+                              }));
+                            }}
                             placeholder="Escribe un comentario…"
                             aria-label={`Comentario para ${exercise.name}`}
                           />
@@ -10253,59 +10412,6 @@ function WorkoutModal({
                             )}
                           </div>
                         </div>
-
-                        {tracksSets && <div class="session-rest-control">
-                          <label>
-                            <Icon name="clock" size={14} />
-                            <span>Descanso</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max="3600"
-                              step="5"
-                              inputMode="numeric"
-                              value={String(restSeconds[id] ?? 60)}
-                              aria-label={`Descanso entre series para ${exercise.name}, en segundos`}
-                              onInput={(event) => {
-                                const value = event.currentTarget.value;
-                                setRestSeconds((current) => ({
-                                  ...current,
-                                  [id]: value,
-                                }));
-                                setRestEndsAt((current) => ({
-                                  ...current,
-                                  [id]: 0,
-                                }));
-                              }}
-                              onBlur={(event) =>
-                                setRestSeconds((current) => ({
-                                  ...current,
-                                  [id]: safeRestSeconds(
-                                    event.currentTarget.value,
-                                  ),
-                                }))
-                              }
-                            />
-                            <small>s</small>
-                          </label>
-                          <Button
-                            type="button"
-                            variant="quiet"
-                            className={`session-rest-button${restRemaining ? " is-running" : ""}`}
-                            aria-label={
-                              restRemaining
-                                ? `Detener descanso de ${formatElapsed(restRemaining)} para ${exercise.name}`
-                                : `Iniciar descanso de ${restSeconds[id] || 0} segundos para ${exercise.name}`
-                            }
-                            onClick={() => toggleRestTimer(id)}
-                            disabled={!restRemaining && !safeRestSeconds(restSeconds[id], 60)}
-                          >
-                            <Icon name={restRemaining ? "pause" : "clock"} size={14} />
-                            {restRemaining
-                              ? formatElapsed(restRemaining)
-                              : "Iniciar descanso"}
-                          </Button>
-                        </div>}
 
                         <div class={`session-set-head${trackingClass}`}>
                           <span>{tracksSets ? "Serie" : "Actividad"}</span>
@@ -12268,6 +12374,7 @@ function App() {
         : null,
       elapsedMs: saved.elapsedMs || 0,
       paused: Boolean(saved.paused),
+      status: saved.status === "resting" ? "resting" : saved.paused ? "paused" : "active",
       segmentStartedAt: saved.paused
         ? null
         : (saved.segmentStartedAt ?? saved.startedAt),
@@ -12285,7 +12392,8 @@ function App() {
   const [deleteWorkoutsOpen, setDeleteWorkoutsOpen] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
   const [celebrationWorkout, setCelebrationWorkout] = useState(null);
-  const [nativeTimerAvailable, setNativeTimerAvailable] = useState(false);
+  const [nativeNotificationAvailable, setNativeNotificationAvailable] =
+    useState(false);
   const [toast, setToastState] = useState("");
   const setToast = (message) => {
     if (isWarningMessage(message)) playWarningSound();
@@ -12826,27 +12934,21 @@ function App() {
     if (Capacitor.getPlatform() !== "android") return;
     if (!activeSession) {
       WorkoutNotification.stop()
-        .then(() => setNativeTimerAvailable(false))
-        .catch(() => setNativeTimerAvailable(false));
+        .then(() => setNativeNotificationAvailable(false))
+        .catch(() => setNativeNotificationAvailable(false));
       return;
     }
-    const elapsedMs = Math.max(
-      0,
-      (activeSession.elapsedMs || 0) +
-        (activeSession.paused
-          ? 0
-          : Date.now() -
-            (activeSession.segmentStartedAt ?? activeSession.startedAt)),
-    );
     WorkoutNotification.show({
       title:
         activeSession.routine?.name || translateText("Entrenamiento libre"),
-      elapsedMs,
       paused: activeSession.paused,
+      status: activeSession.status || (activeSession.paused ? "paused" : "active"),
       language: resolvedLanguage,
     })
-      .then((result) => setNativeTimerAvailable(Boolean(result?.shown)))
-      .catch(() => setNativeTimerAvailable(false));
+      .then((result) =>
+        setNativeNotificationAvailable(Boolean(result?.shown)),
+      )
+      .catch(() => setNativeNotificationAvailable(false));
   }, [activeSession, resolvedLanguage]);
   useEffect(() => {
     if (Capacitor.getPlatform() !== "android") return;
@@ -12872,9 +12974,15 @@ function App() {
             elapsedMs,
             segmentStartedAt: null,
             paused: true,
+            status: "paused",
           };
         }
-        return { ...current, segmentStartedAt: Date.now(), paused: false };
+        return {
+          ...current,
+          segmentStartedAt: Date.now(),
+          paused: false,
+          status: "active",
+        };
       });
     };
     const handleNotificationAction = (event) =>
@@ -13591,6 +13699,7 @@ function App() {
       elapsedMs: 0,
       segmentStartedAt: now,
       paused: false,
+      status: "active",
     });
   };
   const deleteExercise = (exercise) => {
@@ -13717,17 +13826,17 @@ function App() {
     setTab("home");
     setToast("Sesión guardada en tu historial");
   };
-  const pauseWorkout = (elapsedMs) => {
+  const pauseWorkout = (elapsedMs, status = "paused") => {
     setActiveSession((current) =>
       current
-        ? { ...current, elapsedMs, segmentStartedAt: null, paused: true }
+        ? { ...current, elapsedMs, segmentStartedAt: null, paused: true, status }
         : current,
     );
   };
   const resumeWorkout = () => {
     setActiveSession((current) =>
       current
-        ? { ...current, segmentStartedAt: Date.now(), paused: false }
+        ? { ...current, segmentStartedAt: Date.now(), paused: false, status: "active" }
         : current,
     );
   };
@@ -14747,7 +14856,7 @@ function App() {
           onCancel={cancelWorkout}
           onFinish={finishWorkout}
           unit={unit}
-          nativeTimerAvailable={nativeTimerAvailable}
+          nativeNotificationAvailable={nativeNotificationAvailable}
         />
       )}
       {guideStep !== null && (
