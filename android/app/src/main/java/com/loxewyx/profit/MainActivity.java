@@ -20,6 +20,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AndroidNavigationPlugin.class);
         registerPlugin(RoutineLinkPlugin.class);
         registerPlugin(ProgressPhotosPlugin.class);
+        registerPlugin(GeminiNanoPlugin.class);
         super.onCreate(savedInstanceState);
         // Copy a file opened from Android into app-private cache; JavaScript imports it when ready.
         AndroidSharePlugin.captureIncomingIntent(this, getIntent());

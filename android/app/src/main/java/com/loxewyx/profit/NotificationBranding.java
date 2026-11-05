@@ -16,7 +16,18 @@ final class NotificationBranding {
 
     static Bitmap appIcon(Context context) {
         Drawable drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher);
+        return drawableBitmap(context, drawable, null);
+    }
+
+    static Bitmap drawableBitmap(Context context, int resourceId, int tint) {
+        Drawable drawable = ContextCompat.getDrawable(context, resourceId);
+        return drawableBitmap(context, drawable, tint);
+    }
+
+    private static Bitmap drawableBitmap(Context context, Drawable drawable, Integer tint) {
         if (drawable == null) return null;
+        drawable = drawable.mutate();
+        if (tint != null) drawable.setTint(tint);
         int size = Math.max(1, Math.round(64 * context.getResources().getDisplayMetrics().density));
         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);

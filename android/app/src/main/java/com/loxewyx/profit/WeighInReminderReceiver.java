@@ -115,7 +115,9 @@ public class WeighInReminderReceiver extends BroadcastReceiver {
         );
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_scale)
-            .setLargeIcon(NotificationBranding.appIcon(context))
+            .setLargeIcon(NotificationBranding.drawableBitmap(
+                context, R.drawable.ic_stat_scale, 0xFF344235
+            ))
             .setContentTitle(NotificationLanguage.text(prefs.getString(KEY_LANGUAGE, "en"), "Hora de tu pesaje", "Hora del pesatge", "Time for your weigh-in"))
             .setContentText(NotificationLanguage.text(prefs.getString(KEY_LANGUAGE, "en"),
                 "Registra tu peso de hoy y sigue tu progreso en ProFit.",

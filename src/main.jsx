@@ -52,6 +52,7 @@ const HydrationReminder = registerPlugin("HydrationReminder");
 const WeighInReminder = registerPlugin("WeighInReminder");
 const ProteinReminder = registerPlugin("ProteinReminder");
 const ProgressPhotos = registerPlugin("ProgressPhotos");
+const GeminiNano = registerPlugin("GeminiNano");
 
 const today = () => new Date();
 const dateKey = (date) =>
@@ -1265,6 +1266,24 @@ const themeOptions = [
   { id: "system", label: "Sistema" },
 ];
 const icons = {
+  sparkles: (
+    <>
+      <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />
+      <path d="m19 15 .9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15ZM5 2l.7 1.8L7.5 4.5l-1.8.7L5 7l-.7-1.8L2.5 4.5l1.8-.7L5 2Z" />
+    </>
+  ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="4" y="10" width="16" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+    </>
+  ),
   home: (
     <>
       <path d="m3 10 9-7 9 7" />
@@ -1316,6 +1335,12 @@ const icons = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 2" />
+    </>
+  ),
+  clockOff: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l2 1.3M4.5 4.5l15 15" />
     </>
   ),
   flame: (
@@ -1614,76 +1639,14 @@ function Avatar({ name, src, className = "", onClick, fireDays = 0 }) {
   if (!level) return avatar;
   return (
     <span
-      class={`user-fire-frame fire-level-${level}`}
+      class="user-streak-rings"
       title={`${level} ${level === 1 ? "día activo" : "días activos"} esta semana`}
     >
       {avatar}
-      <FireEmbers level={level} />
+      <span class="user-streak-ring user-streak-ring-3" aria-hidden="true" />
+      <span class="user-streak-ring user-streak-ring-2" aria-hidden="true" />
+      <span class="user-streak-ring user-streak-ring-1" aria-hidden="true" />
     </span>
-  );
-}
-
-function FireEmbers({ level }) {
-  const emberCount = level < 3 ? 2 : level < 5 ? 3 : level < 7 ? 4 : 5;
-  const nextId = useRef(0);
-  const [embers, setEmbers] = useState([]);
-  useEffect(() => {
-    let active = true;
-    const timers = new Set();
-    const schedule = (callback, delay) => {
-      const timer = window.setTimeout(() => {
-        timers.delete(timer);
-        if (active) callback();
-      }, delay);
-      timers.add(timer);
-    };
-    const spawnInterval =
-      level < 3 ? 1300 : level < 5 ? 1000 : level < 7 ? 750 : 550;
-    setEmbers([]);
-    const spawn = () => {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 43 + Math.random() * 7;
-      const drift = Math.round((Math.random() - 0.5) * 26);
-      const duration = 1700 + Math.round(Math.random() * 700);
-      const id = ++nextId.current;
-      const ember = {
-        id,
-        left: `${50 + Math.cos(angle) * radius}%`,
-        top: `${50 + Math.sin(angle) * radius}%`,
-        drift: `${drift}px`,
-        midDrift: `${Math.round(drift * 0.55)}px`,
-        duration: `${duration}ms`,
-      };
-      setEmbers((current) => [...current, ember].slice(-emberCount));
-      schedule(
-        () => setEmbers((current) => current.filter((item) => item.id !== id)),
-        duration,
-      );
-      schedule(spawn, spawnInterval * (0.75 + Math.random() * 0.5));
-    };
-    schedule(spawn, 180 + Math.random() * 440);
-    return () => {
-      active = false;
-      timers.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, [emberCount, level]);
-  return (
-    <>
-      {embers.map((ember) => (
-        <span
-          class="fire-ember"
-          aria-hidden="true"
-          key={ember.id}
-          style={{
-            "--ember-left": ember.left,
-            "--ember-top": ember.top,
-            "--ember-drift": ember.drift,
-            "--ember-mid-drift": ember.midDrift,
-            "--ember-duration": ember.duration,
-          }}
-        />
-      ))}
-    </>
   );
 }
 
@@ -1799,12 +1762,55 @@ function DailyIntakeCards({
   hidden,
 }) {
   const [customKcal, setCustomKcal] = useState("");
+  const [waterMotionEnabled, setWaterMotionEnabled] = useState(false);
+  const [waterTilt, setWaterTilt] = useState({ x: 0, y: 0 });
+  const waterMotionRequested = useRef(false);
   const waterPercent = waterGoal
     ? Math.min(Math.round((waterMl / waterGoal) * 100), 100)
     : 0;
   const kcalPercent = kcalGoal
     ? Math.min(Math.round((kcal / kcalGoal) * 100), 100)
     : 0;
+  const kcalGrowth = kcalGoal ? Math.min(kcal / kcalGoal, 1.5) : 0;
+  const requestWaterMotion = async (event) => {
+    if (
+      event.target instanceof Element &&
+      event.target.closest("button, input, select, textarea, a")
+    )
+      return;
+    if (waterMotionEnabled || waterMotionRequested.current) return;
+    waterMotionRequested.current = true;
+    const orientation = window.DeviceOrientationEvent;
+    if (typeof orientation?.requestPermission === "function") {
+      try {
+        if ((await orientation.requestPermission()) !== "granted") {
+          waterMotionRequested.current = false;
+          return;
+        }
+      } catch {
+        waterMotionRequested.current = false;
+        return;
+      }
+    }
+    setWaterMotionEnabled(true);
+  };
+  useEffect(() => {
+    if (typeof window.DeviceOrientationEvent?.requestPermission !== "function")
+      setWaterMotionEnabled(true);
+  }, []);
+  useEffect(() => {
+    if (!waterMotionEnabled) return undefined;
+    const updateTilt = (event) => {
+      const gamma = Number(event.gamma) || 0;
+      const beta = Number(event.beta) || 0;
+      setWaterTilt({
+        x: Math.max(-24, Math.min(24, gamma)),
+        y: Math.max(-24, Math.min(24, beta - 90)),
+      });
+    };
+    window.addEventListener("deviceorientation", updateTilt, true);
+    return () => window.removeEventListener("deviceorientation", updateTilt, true);
+  }, [waterMotionEnabled]);
   return (
     <section
       class="daily-intake-grid"
@@ -1813,117 +1819,158 @@ function DailyIntakeCards({
       hidden={hidden}
       aria-label="Consumo de hoy"
     >
-      <article class="panel intake-card water-card">
-        <div class="intake-heading">
-          <span class="intake-icon water-icon">
-            <Icon name="water" size={19} />
-          </span>
-          <div>
-            <div class="eyebrow">HOY</div>
-            <h2>Hidratación</h2>
+      <article class="panel intake-card water-card" onClick={requestWaterMotion}>
+        <WaterGlass percent={waterPercent} tilt={waterTilt} />
+        <div class="intake-card-content">
+          <div class="intake-heading">
+            <div>
+              <div class="eyebrow">HOY</div>
+              <h2>Hidratación</h2>
+            </div>
+            <button
+              class="intake-reset"
+              type="button"
+              aria-label="Reiniciar agua de hoy"
+              title="Reiniciar contador"
+              onClick={onResetWater}
+            >
+              <Icon name="reset" size={15} />
+            </button>
           </div>
-          <button
-            class="intake-reset"
-            type="button"
-            aria-label="Reiniciar agua de hoy"
-            title="Reiniciar contador"
-            onClick={onResetWater}
-          >
-            <Icon name="reset" size={15} />
-          </button>
-        </div>
-        <div class="intake-total">
-          {waterMl.toLocaleString(intlLocale())}
-          <small> mL</small>
-        </div>
-        <div class="intake-progress">
-          <i style={{ width: `${waterPercent}%` }} />
-        </div>
-        <div class="intake-caption">
-          <span>Meta {waterGoal.toLocaleString(intlLocale())} mL</span>
-          <strong>{waterPercent}%</strong>
-        </div>
-        <div class="intake-actions">
-          <button
-            type="button"
-            title="Añadir 10 mililitros"
-            onClick={() => onAddWater(10)}
-          >
-            10 mL
-          </button>
-          <button
-            type="button"
-            title="Añadir 100 mililitros"
-            onClick={() => onAddWater(100)}
-          >
-            100 mL
-          </button>
-          <button
-            type="button"
-            title="Añadir 250 mililitros"
-            onClick={() => onAddWater(250)}
-          >
-            250 mL
-          </button>
+          <div class="intake-total">
+            {waterMl.toLocaleString(intlLocale())}
+            <small> mL</small>
+          </div>
+          <div class="intake-progress">
+            <i style={{ width: `${waterPercent}%` }} />
+          </div>
+          <div class="intake-caption">
+            <span>Meta {waterGoal.toLocaleString(intlLocale())} mL</span>
+            <strong>{waterPercent}%</strong>
+          </div>
+          <div class="intake-actions">
+            <button
+              type="button"
+              title="Añadir 10 mililitros"
+              onClick={() => onAddWater(10)}
+            >
+              10 mL
+            </button>
+            <button
+              type="button"
+              title="Añadir 100 mililitros"
+              onClick={() => onAddWater(100)}
+            >
+              100 mL
+            </button>
+            <button
+              type="button"
+              title="Añadir 250 mililitros"
+              onClick={() => onAddWater(250)}
+            >
+              250 mL
+            </button>
+          </div>
         </div>
       </article>
       <article class="panel intake-card kcal-card">
-        <div class="intake-heading">
-          <span class="intake-icon kcal-icon">
-            <Icon name="flame" size={19} />
-          </span>
-          <div>
-            <div class="eyebrow">HOY</div>
-            <h2>Consumo de calorías</h2>
+        <CalorieFlame growth={kcalGrowth} />
+        <div class="intake-card-content">
+          <div class="intake-heading">
+            <div>
+              <div class="eyebrow">HOY</div>
+              <h2>Consumo de calorías</h2>
+            </div>
+            <button
+              class="intake-reset"
+              type="button"
+              aria-label="Reiniciar consumo de calorías de hoy"
+              title="Reiniciar contador"
+              onClick={onResetKcal}
+            >
+              <Icon name="reset" size={15} />
+            </button>
           </div>
-          <button
-            class="intake-reset"
-            type="button"
-            aria-label="Reiniciar consumo de calorías de hoy"
-            title="Reiniciar contador"
-            onClick={onResetKcal}
+          <div class="intake-total">
+            {kcal.toLocaleString(intlLocale())}
+            <small> kcal</small>
+          </div>
+          <div class="intake-progress kcal-progress">
+            <i style={{ width: `${kcalPercent}%` }} />
+          </div>
+          <div class="intake-caption">
+            <span>Meta {kcalGoal.toLocaleString(intlLocale())} kcal</span>
+            <strong>{kcalPercent}%</strong>
+          </div>
+          <form
+            class="kcal-quick-add"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const value = Number(customKcal);
+              if (value > 0) {
+                onAddKcal(value);
+                setCustomKcal("");
+              }
+            }}
           >
-            <Icon name="reset" size={15} />
-          </button>
+            <input
+              aria-label="Cantidad de calorías a añadir"
+              type="number"
+              min="1"
+              max="10000"
+              inputMode="numeric"
+              placeholder="Añadir"
+              value={customKcal}
+              onInput={(event) => setCustomKcal(event.currentTarget.value)}
+            />
+            <button type="submit" aria-label="Registrar consumo de calorías">
+              <Icon name="plus" size={17} />
+            </button>
+          </form>
         </div>
-        <div class="intake-total">
-          {kcal.toLocaleString(intlLocale())}
-          <small> kcal</small>
-        </div>
-        <div class="intake-progress kcal-progress">
-          <i style={{ width: `${kcalPercent}%` }} />
-        </div>
-        <div class="intake-caption">
-          <span>Meta {kcalGoal.toLocaleString(intlLocale())} kcal</span>
-          <strong>{kcalPercent}%</strong>
-        </div>
-        <form
-          class="kcal-quick-add"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const value = Number(customKcal);
-            if (value > 0) {
-              onAddKcal(value);
-              setCustomKcal("");
-            }
-          }}
-        >
-          <input
-            aria-label="Cantidad de calorías a añadir"
-            type="number"
-            min="1"
-            max="10000"
-            inputMode="numeric"
-            placeholder="Añadir"
-            value={customKcal}
-            onInput={(event) => setCustomKcal(event.currentTarget.value)}
-          />
-          <button type="submit" aria-label="Registrar consumo de calorías">
-            <Icon name="plus" size={17} />
-          </button>
-        </form>
       </article>
     </section>
+  );
+}
+
+function WaterGlass({ percent, tilt }) {
+  return (
+    <div
+      class="water-glass-art"
+      aria-hidden="true"
+      style={{
+        "--water-level": `${Math.max(0, Math.min(100, percent))}%`,
+        "--water-shift": `${tilt.x * 0.42}px`,
+        "--water-angle": `${tilt.x * 0.32}deg`,
+        "--water-slope": `${tilt.y * 0.32}px`,
+      }}
+    >
+      <span class="water-glass-liquid">
+        <i class="water-glass-surface" />
+      </span>
+    </div>
+  );
+}
+
+function CalorieFlame({ growth }) {
+  return (
+    <div
+      class="calorie-flame-art"
+      style={{
+        "--flame-scale": 0.48 + growth * 0.52,
+        "--flame-intensity": Math.min(1, 0.56 + growth * 0.44),
+      }}
+      aria-hidden="true"
+    >
+      <svg viewBox="0 0 400 260" preserveAspectRatio="none" focusable="false">
+        <path class="flame-bed" d="M0 260V220C70 220 90 115 200 115S330 220 400 220V260Z" />
+        <path class="flame-gold" d="M0 260V237C70 237 93 151 200 151S330 237 400 237V260Z" />
+        <path class="flame-core" d="M0 260V250C75 250 98 190 200 190S325 250 400 250V260Z" />
+        <path class="flame-wave" d="M0 230C35 211 65 211 100 230S165 249 200 230 265 211 300 230 365 249 400 230" />
+        <path class="flame-wave flame-wave-low" d="M0 244C30 231 57 231 87 244S144 257 174 244 231 231 261 244 318 257 348 244 378 238 400 244" />
+      </svg>
+      <i class="flame-glow" />
+    </div>
   );
 }
 
@@ -2062,7 +2109,7 @@ function DashboardLayoutModal({ layout, onChange, onClose }) {
     setDropTargetAfter(false);
   };
   return (
-    <Modal title="Organizar Inicio" onClose={onClose}>
+    <Modal title="Organizar Inicio" onClose={onClose} forceImmersive>
       <div class="dashboard-layout-modal">
         <div class="eyebrow">PERSONALIZA TU INICIO</div>
         <h2>Tarjetas del inicio</h2>
@@ -2134,6 +2181,7 @@ function Dashboard({
   onNavigate,
   onStartWorkout,
   onWorkoutOpen,
+  onOpenAssistant,
   unit,
   goal,
   weeklyGoalHistory,
@@ -2235,6 +2283,17 @@ function Dashboard({
           <p class="welcome-motivation">✳ {motivation}</p>
         </div>
         <div class="welcome-actions">
+          {onOpenAssistant && (
+            <button
+              type="button"
+              class="gemini-top-action"
+              onClick={onOpenAssistant}
+              aria-label="ProFit AI"
+              title="ProFit AI"
+            >
+              <Icon name="sparkles" size={21} />
+            </button>
+          )}
           <Avatar
             name={name}
             src={avatar}
@@ -2644,7 +2703,7 @@ function ExercisePreviewModal({ exercise, onClose, onTop = false }) {
       title={`Cómo hacer ${exercise.name}`}
       onClose={onClose}
       wide
-      className={onTop ? "modal-over-picker" : ""}
+      className={`${onTop ? "modal-over-picker " : ""}exercise-preview-detail-modal`}
     >
       <div class="exercise-preview-modal">
         <div class="exercise-preview-heading">
@@ -3447,9 +3506,6 @@ function RoutineForm({ routine, groups = [], fixedGroup, onClose, onSave }) {
           />
         </label>
         <div class="form-actions">
-          <Button variant="quiet" type="button" onClick={onClose}>
-            Cancelar
-          </Button>
           <Button type="submit">
             <Icon name="check" size={15} />{" "}
             {routine ? "Guardar cambios" : "Crear rutina"}
@@ -3618,15 +3674,6 @@ function RoutineDetail({
           {adding ? (
             <section className="routine-picker routine-picker-immersive">
               <div className="library-immersive-top">
-                <button
-                  type="button"
-                  className="library-back-button"
-                  onClick={() => setAdding(false)}
-                >
-                  <Icon name="arrow" size={15} className="library-back-arrow" />
-                  Volver a la rutina
-                </button>
-
                 <div className="eyebrow">
                   BIBLIOTECA LOCAL ·{" "}
                   <span translate="no">
@@ -4479,16 +4526,20 @@ function StrengthMedals({ workouts, unit, cardOrder, hidden = false }) {
       };
       records.set(entry.id, {
         ...current,
-        name: entry.name || current.name,
+        name:
+          workout.date >= current.date
+            ? entry.name || current.name
+            : current.name,
         weight: Math.max(best, current.weight),
         reps: Math.max(reps, current.reps),
-        date: workout.date,
+        date: workout.date > current.date ? workout.date : current.date,
       });
     }),
   );
-  const medals = [...records.values()].sort((a, b) =>
+  const allMedals = [...records.values()].sort((a, b) =>
     b.date.localeCompare(a.date),
   );
+  const medals = allMedals.slice(0, 5);
   const convert = (weight) => (unit === "lb" ? weight * 2.20462 : weight);
   return (
     <section
@@ -4502,7 +4553,7 @@ function StrengthMedals({ workouts, unit, cardOrder, hidden = false }) {
         title="Medallas por ejercicio"
         action={
           <span class="muted-label">
-            {medals.length} {medals.length === 1 ? "récord" : "récords"}
+            {allMedals.length} {allMedals.length === 1 ? "récord" : "récords"}
           </span>
         }
       />
@@ -4604,8 +4655,8 @@ function WeeklyGoalAchievements({
 function SettingsSectionLabel({ label, description, first = false }) {
   return (
     <div class={`settings-section-label ${first ? "first" : ""}`}>
-      <span>{label}</span>
-      <small>{description}</small>
+      <span>{translateText(label)}</span>
+      <small>{translateText(description)}</small>
     </div>
   );
 }
@@ -4644,6 +4695,14 @@ function ProfilePage({
   onTheme,
   language,
   onLanguage,
+  aiEnabled,
+  onAiEnabled,
+  geminiApiKey,
+  onGeminiApiKey,
+  useGeminiNano,
+  onUseGeminiNano,
+  geminiNanoCompatible,
+  geminiNanoStatus,
   soundsMuted,
   onSoundsMuted,
   waterGoal,
@@ -5153,9 +5212,6 @@ function ProfilePage({
           />
           <div class="unit-settings-row" aria-label="Unidades">
             <div class="unit-setting">
-              <span class="setting-icon">
-                <Icon name="scale" size={16} />
-              </span>
               <strong>Peso</strong>
               <div class="segmented-control">
                 <button
@@ -5175,9 +5231,6 @@ function ProfilePage({
               </div>
             </div>
             <div class="unit-setting">
-              <span class="setting-icon">
-                <Icon name="scale" size={16} />
-              </span>
               <strong>Altura</strong>
               <div class="segmented-control">
                 <button
@@ -5641,6 +5694,65 @@ function ProfilePage({
             </select>
           </label>
           <SettingsSectionLabel
+            label="INTELIGENCIA ARTIFICIAL"
+            description="Activa el asistente y elige cómo quieres procesar tus consultas."
+          />
+          <div class="ai-preferences">
+            <label class="ai-setting-toggle">
+              <span class="ai-setting-icon"><Icon name="sparkles" size={16} /></span>
+              <span class="ai-setting-copy">
+                <strong>{translateText("Activar ProFit AI")}</strong>
+                <small>{translateText("Asistente para rutinas, nutrición y funciones de la app")}</small>
+              </span>
+              <input
+                type="checkbox"
+                checked={aiEnabled}
+                onChange={(event) => onAiEnabled(event.currentTarget.checked)}
+              />
+            </label>
+            {aiEnabled && (
+              <div class="ai-setting-details">
+                <label class="ai-api-key-field">
+                  <span>{translateText("Clave de API de Gemini")}</span>
+                  <input
+                    type="password"
+                    value={geminiApiKey}
+                    onInput={(event) => onGeminiApiKey(event.currentTarget.value)}
+                    placeholder="AIza…"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck={false}
+                  />
+                  <small>
+                    {translateText("Se guarda en este dispositivo. Una app estática no puede proteger la clave; el modo API envía a Google consultas, imágenes y contexto de entrenamiento.")}
+                  </small>
+                </label>
+                <label class={`ai-nano-toggle ${geminiNanoCompatible ? "" : "is-disabled"}`}>
+                  <input
+                    type="checkbox"
+                    checked={useGeminiNano}
+                    disabled={!geminiNanoCompatible}
+                    onChange={(event) => onUseGeminiNano(event.currentTarget.checked)}
+                  />
+                  <span class="ai-setting-copy">
+                    <strong>{translateText("Usar Gemini Nano en vez de la API")}</strong>
+                    <small>
+                      {geminiNanoStatus === "checking"
+                        ? translateText("Comprobando la compatibilidad de Gemini Nano…")
+                        : geminiNanoStatus === "module_missing"
+                          ? translateText("Gemini Nano se puede descargar en este dispositivo")
+                        : geminiNanoCompatible
+                          ? translateText(geminiNanoStatus === "available"
+                            ? "Se ejecuta en este dispositivo y no requiere una clave de API."
+                            : "Compatible; Gemini Nano puede necesitar preparar el modelo la primera vez.")
+                          : translateText("Gemini Nano no es compatible con este dispositivo.")}
+                    </small>
+                  </span>
+                </label>
+              </div>
+            )}
+          </div>
+          <SettingsSectionLabel
             label="SONIDO"
             description="Activa o silencia las señales al completar ejercicios y sesiones."
           />
@@ -6027,6 +6139,23 @@ const categoryRanges = [
   { days: 0, label: "Siempre" },
 ];
 
+function MeasureSeriesLabel({ label }) {
+  const text = String(label || "");
+  return (
+    <span class="measure-series-label" title={text}>
+      {text
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word, index) => (
+          <span class="measure-series-word" key={`${index}-${word}`}>
+            {word}
+          </span>
+        ))}
+    </span>
+  );
+}
+
 function CategoryBalance({ workouts, exercises }) {
   const [period, setPeriod] = useState(90);
   const [muscleVisibility, setMuscleVisibility] = useState(() => {
@@ -6232,7 +6361,7 @@ function CategoryBalance({ workouts, exercises }) {
                       background: item.color,
                     }}
                   />
-                  {item.name}
+                  <MeasureSeriesLabel label={item.name} />
                 </button>
               );
             })}
@@ -6246,7 +6375,9 @@ function CategoryBalance({ workouts, exercises }) {
               <span>
                 <Icon name="trend" size={14} /> MÁS TRABAJADO
               </span>
-              <strong>{muscleStats.strongest?.name || "—"}</strong>
+              <strong title={muscleStats.strongest?.name || "—"}>
+                {muscleStats.strongest?.name || "—"}
+              </strong>
               <small>
                 {muscleStats.strongest?.count || 0} estímulos en {periodLabel}
               </small>
@@ -6256,7 +6387,9 @@ function CategoryBalance({ workouts, exercises }) {
                 <span>
                   <Icon name="arrow" size={14} /> MENOS PRESENTE
                 </span>
-                <strong>{muscleStats.weakest.name}</strong>
+                <strong title={muscleStats.weakest.name}>
+                  {muscleStats.weakest.name}
+                </strong>
                 <small>
                   {muscleStats.weakest.count} estímulos en {periodLabel}
                 </small>
@@ -7169,7 +7302,7 @@ function MeasureChart({ measures, unit = "kg", heightUnit = "cm" }) {
                   key={series.id}
                 >
                   <i style={{ "--series-color": series.color }} />
-                  {translateText(series.label)}
+                  <MeasureSeriesLabel label={translateText(series.label)} />
                 </button>
               );
             })}
@@ -7269,12 +7402,92 @@ function Modal({
   onClose,
   children,
   wide = false,
+  forceImmersive = false,
   dismissible = true,
   className = "",
 }) {
   const onCloseRef = useRef(onClose);
   const backdropRef = useRef(null);
+  const cardRef = useRef(null);
+  const [immersive, setImmersive] = useState(false);
+  const [entranceComplete, setEntranceComplete] = useState(false);
   onCloseRef.current = onClose;
+  useEffect(() => {
+    const fallback = window.setTimeout(() => setEntranceComplete(true), 420);
+    return () => window.clearTimeout(fallback);
+  }, []);
+  useLayoutEffect(() => {
+    const card = cardRef.current;
+    const backdrop = backdropRef.current;
+    if (!card || !backdrop) return undefined;
+    if (forceImmersive) {
+      setImmersive(true);
+      return undefined;
+    }
+
+    const compactOrAlreadyImmersive =
+      backdrop.classList.contains("confirmation-layer") ||
+      backdrop.classList.contains("workout-session-modal") ||
+      backdrop.classList.contains("routine-library-modal") ||
+      backdrop.classList.contains("measure-photo-gallery-modal") ||
+      Boolean(card.querySelector(".routine-group-form"));
+    if (compactOrAlreadyImmersive) return undefined;
+
+    let frame = 0;
+    const measure = () => {
+      const viewportHeight =
+        window.visualViewport?.height || window.innerHeight || 0;
+      const availableHeight = Math.max(0, viewportHeight - 24);
+      const contentHeight = card.scrollHeight;
+      const hasLongScrollableContent = Array.from(
+        card.querySelectorAll("*"),
+      ).some((element) => {
+        if (element.clientHeight < 80) return false;
+        const overflowY = window.getComputedStyle(element).overflowY;
+        return (
+          (overflowY === "auto" || overflowY === "scroll") &&
+          element.scrollHeight > element.clientHeight + 48
+        );
+      });
+      setImmersive((current) =>
+        current
+          ? contentHeight > availableHeight - 64 || hasLongScrollableContent
+          : contentHeight > availableHeight + 2 || hasLongScrollableContent,
+      );
+    };
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    };
+
+    measure();
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(scheduleMeasure);
+    if (resizeObserver) {
+      resizeObserver.observe(card);
+      Array.from(card.children).forEach((element) =>
+        resizeObserver.observe(element),
+      );
+    }
+    const mutationObserver = new MutationObserver(scheduleMeasure);
+    mutationObserver.observe(card, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+    window.addEventListener("resize", scheduleMeasure);
+    window.visualViewport?.addEventListener("resize", scheduleMeasure);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      resizeObserver?.disconnect();
+      mutationObserver.disconnect();
+      window.removeEventListener("resize", scheduleMeasure);
+      window.visualViewport?.removeEventListener("resize", scheduleMeasure);
+    };
+  }, [forceImmersive]);
   useEffect(() => {
     const handle = (event) => {
       if (!dismissible || event.key !== "Escape") return;
@@ -7294,16 +7507,24 @@ function Modal({
   return (
     <div
       ref={backdropRef}
-      class={`modal-backdrop ${className}`}
+      class={`modal-backdrop ${className} ${entranceComplete ? "modal-entered" : ""}`}
+      data-immersive={immersive ? "true" : "false"}
       onClick={(event) =>
         dismissible && event.target === event.currentTarget && onClose()
       }
     >
       <div
+        ref={cardRef}
         class={`modal-card ${wide ? "modal-wide" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        onAnimationEnd={(event) => {
+          if (
+            event.target === cardRef.current &&
+            event.animationName === "modal-card-enter"
+          ) setEntranceComplete(true);
+        }}
       >
         <div class="modal-header">
           <div class="eyebrow">PROFIT</div>
@@ -7320,6 +7541,624 @@ function Modal({
         {children}
       </div>
     </div>
+  );
+}
+
+const assistantPlainText = (value, maximum = 700) =>
+  String(value || "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+    .trim()
+    .slice(0, maximum);
+
+const assistantNumber = (value, fallback, minimum, maximum) => {
+  const number = Number(value);
+  const fallbackNumber = Number(fallback);
+  const safeFallback = Number.isFinite(fallbackNumber)
+    ? Math.min(maximum, Math.max(minimum, Math.round(fallbackNumber)))
+    : minimum;
+  return Number.isFinite(number)
+    ? Math.min(maximum, Math.max(minimum, Math.round(number)))
+    : safeFallback;
+};
+
+function assistantCandidates(exercises, prompt) {
+  const words = assistantPlainText(prompt, 200)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((word) => word.length > 2);
+  const ranked = exercises
+    .filter((exercise) => exercise?.id && exercise?.name)
+    .map((exercise) => {
+      const searchable = [
+        exercise.name,
+        exercise.muscle,
+        ...(exercise.secondary || []),
+        exercise.equipment,
+        exercise.description,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase();
+      const score = words.reduce(
+        (total, word) => total + (searchable.includes(word) ? 1 : 0),
+        0,
+      );
+      return { exercise, score, muscle: normalizeMuscleFilterValue(exercise.muscle) };
+    })
+    .sort((a, b) => b.score - a.score || a.exercise.name.localeCompare(b.exercise.name));
+
+  const selected = new Map();
+  const muscleBuckets = new Map();
+  ranked.forEach((entry) => {
+    if (!muscleBuckets.has(entry.muscle)) muscleBuckets.set(entry.muscle, []);
+    muscleBuckets.get(entry.muscle).push(entry);
+  });
+  [...muscleBuckets.values()].forEach((bucket) =>
+    bucket.slice(0, 2).forEach(({ exercise }) => selected.set(exercise.id, exercise)),
+  );
+  ranked.forEach(({ exercise }) => {
+    if (selected.size < 48) selected.set(exercise.id, exercise);
+  });
+
+  return [...selected.values()].slice(0, 48).map((exercise) => ({
+    id: exercise.id,
+    name: translateText(exercise.name),
+    muscle: translateText(exercise.muscle || ""),
+    secondary: (exercise.secondary || []).slice(0, 3).map(translateText),
+    equipment: translateText(exercise.equipment || ""),
+    timed: isTimedPrescription(exercise.reps),
+    sets: exerciseTracksSets(exercise),
+    reps: exerciseTracksReps(exercise),
+  }));
+}
+
+function parseAssistantJson(raw) {
+  const cleaned = String(raw || "")
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1));
+      } catch { /* Use the readable text fallback below. */ }
+    }
+    return { type: "chat", reply: cleaned };
+  }
+}
+
+function compressAssistantPhoto(file) {
+  return new Promise((resolve, reject) => {
+    if (!file?.type?.startsWith("image/")) {
+      reject(new Error(translateText("Elige una imagen válida.")));
+      return;
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      reject(new Error(translateText("La imagen supera el límite de 25 MB.")));
+      return;
+    }
+    const finish = (image, cleanup) => {
+      const width = image.width || image.naturalWidth;
+      const height = image.height || image.naturalHeight;
+      const scale = Math.min(1, 1280 / Math.max(width, height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const context = canvas.getContext("2d", { alpha: false });
+      if (!context) {
+        cleanup?.();
+        reject(new Error(translateText("No se pudo preparar la imagen.")));
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      cleanup?.();
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.76);
+      const imageBase64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+      resolve({ dataUrl, imageBase64 });
+    };
+    if (typeof createImageBitmap === "function") {
+      createImageBitmap(file)
+        .then((bitmap) => finish(bitmap, () => bitmap.close?.()))
+        .catch(() => reject(new Error(translateText("No se pudo abrir la imagen."))));
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => finish(image, () => URL.revokeObjectURL(url));
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error(translateText("No se pudo abrir la imagen.")));
+    };
+    image.src = url;
+  });
+}
+
+async function generateGeminiApi(apiKey, prompt, imageBase64) {
+  const parts = [{ text: prompt }];
+  if (imageBase64) {
+    parts.push({ inline_data: { mime_type: "image/jpeg", data: imageBase64 } });
+  }
+  const requestBody = JSON.stringify({
+    contents: [{ role: "user", parts }],
+    generationConfig: { responseMimeType: "application/json", temperature: 0.25 },
+  });
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let response;
+    try {
+      response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: requestBody,
+        },
+      );
+    } catch {
+      throw new Error(translateText("No se pudo conectar con Gemini API. Comprueba la conexión e inténtalo de nuevo."));
+    }
+    if (response.status === 503 && attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 800 * (2 ** attempt)));
+      continue;
+    }
+    if (response.status === 503) {
+      throw new Error(translateText("Gemini API está temporalmente saturada (503). La app reintentó la solicitud; vuelve a probar en un momento."));
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(
+        response.status === 401 || response.status === 403
+          ? translateText("La clave de Gemini no es válida o no tiene acceso a la API.")
+          : response.status === 429
+            ? translateText("Gemini API ha alcanzado el límite de solicitudes. Inténtalo más tarde.")
+            : translateText("Gemini API no pudo completar la solicitud."),
+      );
+    }
+    const text = payload?.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || "")
+      .join("")
+      .trim();
+    if (!text) throw new Error(translateText("Gemini API no devolvió una respuesta."));
+    return text;
+  }
+  throw new Error(translateText("Gemini API está temporalmente saturada (503). La app reintentó la solicitud; vuelve a probar en un momento."));
+}
+
+function GeminiAssistantModal({
+  exercises,
+  routines,
+  routineGroups,
+  workouts,
+  todayKcal,
+  kcalGoal,
+  language,
+  useGeminiNano,
+  geminiApiKey,
+  onClose,
+  onSaveRoutine,
+  onAddKcal,
+  onNavigate,
+}) {
+  const [status, setStatus] = useState("checking");
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState("");
+  const imageInput = useRef(null);
+  const messageInput = useRef(null);
+  const listRef = useRef(null);
+  const isAndroid = Capacitor.getPlatform() === "android";
+
+  const refreshStatus = async () => {
+    if (!isAndroid) {
+      setStatus("unsupported");
+      return;
+    }
+    setStatus("checking");
+    try {
+      const result = await GeminiNano.checkAvailability();
+      setStatus(result?.status || "unavailable");
+    } catch {
+      setStatus("unavailable");
+    }
+  };
+  useEffect(() => {
+    if (useGeminiNano) void refreshStatus();
+  }, [useGeminiNano]);
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages, loading]);
+
+  const assistantStatusText = useGeminiNano ? ({
+    checking: "Comprobando Gemini Nano…",
+    available: "Disponible en este dispositivo",
+    module_missing: "Gemini Nano se puede descargar en este dispositivo",
+    downloadable: "Gemini Nano se puede descargar en este dispositivo",
+    downloading: "Gemini Nano se está descargando",
+    unavailable: "Gemini Nano no está disponible en este dispositivo",
+    unsupported: "Gemini Nano solo está disponible en Android compatible",
+  }[status] || "Gemini Nano no está disponible en este dispositivo")
+    : geminiApiKey.trim()
+      ? "Conectado a Gemini API"
+      : "Falta configurar la clave de API";
+  const assistantReady = useGeminiNano
+    ? status === "available"
+    : Boolean(geminiApiKey.trim());
+  const displayStatus = useGeminiNano
+    ? status
+    : geminiApiKey.trim() ? "available" : "missing-key";
+
+  const downloadModel = async () => {
+    setDownloading(true);
+    setError("");
+    try {
+      const result = await GeminiNano.downloadModel();
+      setStatus(result?.status || "available");
+      if (result?.status === "available") await refreshStatus();
+      else if (result?.status === "unavailable")
+        setError(translateText("No se pudo preparar Gemini Nano en este dispositivo."));
+    } catch {
+      setError(translateText("No se pudo descargar Gemini Nano. Revisa AICore e inténtalo de nuevo."));
+      setStatus("downloadable");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const choosePhoto = async (file) => {
+    if (!file) return;
+    setError("");
+    try {
+      setPhoto(await compressAssistantPhoto(file));
+    } catch (failure) {
+      setError(failure?.message || translateText("No se pudo preparar la imagen."));
+    }
+  };
+
+  const makePrompt = (mode, question, imageIncluded) => {
+    const languageName = {
+      es: "Spanish", ca: "Catalan", en: "English", fr: "French",
+      de: "German", it: "Italian", pt: "Portuguese",
+    }[language] || "English";
+    const context = {
+      workoutCount: workouts.length,
+      workoutsLast7Days: workouts.filter((workout) => {
+        const age = (Date.now() - new Date(`${workout.date}T12:00:00`).getTime()) / 86400000;
+        return age >= 0 && age < 7;
+      }).length,
+      routineNames: routines.slice(0, 20).map((routine) => assistantPlainText(routine.name, 60)),
+      exerciseCount: exercises.length,
+      caloriesLoggedToday: todayKcal,
+      calorieGoal: kcalGoal,
+    };
+    const candidates = mode === "routine" ? assistantCandidates(exercises, question) : [];
+    const history = messages.slice(-6).map((message) => ({
+      role: message.role,
+      text: assistantPlainText(message.text, 500),
+    }));
+    const schemas = {
+      chat: '{"type":"chat","reply":"..."}',
+      navigate: '{"type":"navigate","reply":"...","target":"home|training|profile"}',
+      routine: '{"type":"routine","reply":"...","routine":{"name":"...","group":"...","exercises":[{"id":"ID_FROM_LIST","sets":3,"reps":"8-12","targetMinutes":0,"restSeconds":90,"comment":""}]}}',
+      calories: '{"type":"calories","reply":"...","kcal":500,"confidence":"low|medium|high","foods":[{"name":"...","kcal":500}]}',
+    };
+    return [
+      "You are ProFit's fitness assistant. Be concise, practical, non-judgmental, and do not diagnose or give medical advice. Return exactly one valid JSON object and no markdown.",
+      `Write every user-facing sentence in ${languageName}.`,
+      "You can answer app questions, suggest routines, estimate meal calories from the attached image, and suggest navigating to one of the app's three pages. Never claim to have changed data. Mutations and navigation are only suggestions; the app will ask the user to confirm.",
+      "If a request is unrelated or unclear, return type chat and ask one short follow-up.",
+      `Request mode: ${mode}. Available output schemas: ${Object.values(schemas).join(" ")}`,
+      mode === "routine"
+        ? `Create a safe, balanced routine based only on these allowed exercises. Use only IDs exactly as provided, never invent IDs. Keep it to 3-10 exercises, sets 1-8, repetitions 1-50 (or a short range), timed repetition values 5-600 seconds when an exercise is marked timed, targetMinutes 1-180 for activities without sets and repetitions, rest 0-300 seconds, comment at most 120 characters. Existing group names: ${JSON.stringify(routineGroups.slice(0, 20))}. New group is allowed if requested. Allowed exercises: ${JSON.stringify(candidates)}`
+        : "",
+      imageIncluded
+        ? "Estimate calories for the visible food and a typical portion. It is an uncertain estimate: state assumptions briefly, use a conservative single integer estimate, and never present it as exact. Do not infer ingredients that are not visible. Return type calories with foods and confidence."
+        : "",
+      `Local summary (no personal measurements or identifying data): ${JSON.stringify(context)}`,
+      `Recent conversation: ${JSON.stringify(history)}`,
+      `User request: ${assistantPlainText(question, 1000)}`,
+    ].filter(Boolean).join("\n\n");
+  };
+
+  const validateRoutine = (candidate, reply) => {
+    const available = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+    const seen = new Set();
+    const entries = (Array.isArray(candidate?.exercises) ? candidate.exercises : [])
+      .slice(0, 20)
+      .flatMap((item) => {
+        const id = String(item?.id || "");
+        const exercise = available.get(id);
+        if (!exercise || seen.has(id)) return [];
+        seen.add(id);
+        const settings = {};
+        if (exerciseTracksSets(exercise))
+          settings.sets = assistantNumber(item.sets, exercise.sets || 3, 1, 8);
+        if (exerciseTracksReps(exercise)) {
+          const reps = assistantPlainText(item.reps, 14);
+          if (isTimedPrescription(exercise.reps)) {
+            const seconds = reps.match(/^(\d{1,3})(?:\s*(?:s|sec|secs|seg(?:undo)?s?))?$/i);
+            settings.reps = seconds
+              ? `${assistantNumber(seconds[1], 30, 5, 600)} s`
+              : String(exercise.reps || "30 s");
+          } else {
+            settings.reps = /^\d{1,2}(?:\s*[-–]\s*\d{1,2})?$/.test(reps)
+              ? reps
+              : String(exercise.reps || 8);
+          }
+        }
+        if (!exerciseTracksSets(exercise) && !exerciseTracksReps(exercise))
+          settings.targetMinutes = assistantNumber(item.targetMinutes, exercise.duration || 20, 1, 180);
+        if (exerciseTracksSets(exercise))
+          settings.restSeconds = assistantNumber(item.restSeconds, exercise.rest ?? 60, 0, 300);
+        settings.comment = assistantPlainText(item.comment, 120);
+        return [{ id, settings }];
+      });
+    if (!entries.length) return null;
+    return {
+      reply,
+      routine: {
+        id: `ai-${uid()}`,
+        name: assistantPlainText(candidate?.name, 60) || translateText("Rutina personalizada"),
+        group: assistantPlainText(candidate?.group, 40),
+        exercises: entries.map((entry) => entry.id),
+        exerciseSettings: Object.fromEntries(entries.map((entry) => [entry.id, entry.settings])),
+      },
+      exerciseList: entries.map((entry) => ({
+        exercise: available.get(entry.id),
+        settings: entry.settings,
+      })),
+    };
+  };
+
+  const send = async (event) => {
+    event?.preventDefault?.();
+    const question = input.trim() || (photo ? translateText("Calcula las calorías aproximadas de esta comida.") : "");
+    if (!question || loading || !assistantReady) return;
+    const image = photo;
+    const mode = image
+      ? "calories"
+      : /\b(rutina|rutinas|rotina|routine|workout(?:\s+plan)?|training\s+plan|trainingsplan|programme d'entraînement|programa de entrenamiento|piano di allenamento)\b/i.test(question)
+        ? "routine"
+        : "agent";
+    const messageId = uid();
+    setMessages((current) => [...current, {
+      id: messageId,
+      role: "user",
+      text: question,
+      imagePreview: image?.dataUrl || "",
+    }]);
+    setInput("");
+    if (messageInput.current) messageInput.current.style.height = "43px";
+    setPhoto(null);
+    setError("");
+    setLoading(true);
+    try {
+      let responseText;
+      if (useGeminiNano) {
+        const response = await GeminiNano.generate({
+          prompt: makePrompt(mode, question, Boolean(image)),
+          ...(image ? { imageBase64: image.imageBase64 } : {}),
+        });
+        if (response?.status !== "available") {
+          setStatus(response?.status || "unavailable");
+          throw new Error(translateText("Gemini Nano no está listo. Comprueba su disponibilidad e inténtalo de nuevo."));
+        }
+        responseText = response.text;
+      } else {
+        responseText = await generateGeminiApi(
+          geminiApiKey.trim(),
+          makePrompt(mode, question, Boolean(image)),
+          image?.imageBase64,
+        );
+      }
+      const decoded = parseAssistantJson(responseText);
+      const reply = assistantPlainText(decoded.reply, 700) || assistantPlainText(responseText, 700);
+      const assistantMessage = { id: uid(), role: "assistant", text: reply };
+      if (decoded.type === "routine") {
+        const normalized = validateRoutine(decoded.routine, reply);
+        if (normalized) Object.assign(assistantMessage, normalized);
+        else assistantMessage.text = translateText("No he podido enlazar los ejercicios sugeridos con la biblioteca. Prueba a describir el objetivo o los músculos que quieres trabajar.");
+      } else if (decoded.type === "calories") {
+        const kcal = assistantNumber(decoded.kcal, 0, 0, 5000);
+        if (kcal > 0) {
+          assistantMessage.calories = {
+            kcal,
+            confidence: ["low", "medium", "high"].includes(decoded.confidence) ? decoded.confidence : "medium",
+            foods: Array.isArray(decoded.foods)
+              ? decoded.foods.slice(0, 8).map((food) => ({
+                  name: assistantPlainText(food?.name, 60),
+                  kcal: assistantNumber(food?.kcal, 0, 0, 5000),
+                })).filter((food) => food.name)
+              : [],
+          };
+        }
+      } else if (decoded.type === "navigate" && ["home", "training", "profile"].includes(decoded.target)) {
+        assistantMessage.navigation = decoded.target;
+      }
+      setMessages((current) => [...current, assistantMessage]);
+    } catch (failure) {
+      setError(failure?.message || translateText("No se pudo generar una respuesta. Comprueba la configuración de IA e inténtalo de nuevo."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateEstimatedCalories = (id, value) => {
+    const kcal = assistantNumber(value, 0, 0, 5000);
+    setMessages((current) => current.map((message) =>
+      message.id === id && message.calories
+        ? { ...message, calories: { ...message.calories, kcal, logged: false } }
+        : message,
+    ));
+  };
+  const addSuggestedRoutine = (message) => {
+    onClose();
+    onSaveRoutine(message.routine);
+  };
+  const registerCalories = (message) => {
+    onAddKcal(message.calories.kcal);
+    setMessages((current) => current.map((item) =>
+      item.id === message.id ? { ...item, calories: { ...item.calories, logged: true } } : item,
+    ));
+  };
+  const openPage = (page) => {
+    onClose();
+    onNavigate(page);
+  };
+
+  return (
+    <Modal
+      title="ProFit AI"
+      onClose={onClose}
+      wide
+      forceImmersive
+      className="gemini-assistant-modal"
+    >
+      <section class="gemini-assistant">
+        <header class="gemini-assistant-heading">
+          <span class="gemini-assistant-mark"><Icon name="sparkles" size={21} /></span>
+          <div>
+            <h2>{translateText("ProFit AI")}</h2>
+            <p>{translateText("Tu asistente para entrenar y registrar tu progreso.")}</p>
+          </div>
+            <span class={`gemini-status gemini-status-${displayStatus}`}>
+            <i />{translateText(assistantStatusText)}
+          </span>
+        </header>
+        {useGeminiNano && ["module_missing", "downloadable"].includes(status) && (
+          <div class="gemini-model-action">
+            <span>{translateText("Gemini Nano necesita descargar el modelo en este dispositivo.")}</span>
+            <Button type="button" onClick={downloadModel} disabled={downloading}>
+              <Icon name="download" size={15} />
+              {downloading ? translateText("Descargando modelo…") : translateText("Descargar modelo")}
+            </Button>
+          </div>
+        )}
+        {useGeminiNano && status === "unsupported" && (
+          <div class="gemini-unavailable-note">
+            <Icon name="info" size={16} />
+            {translateText("Este asistente funciona con Gemini Nano en dispositivos Android compatibles. No envía tus fotos ni consultas a un servidor de ProFit.")}
+          </div>
+        )}
+        {useGeminiNano && status === "unavailable" && (
+          <div class="gemini-unavailable-note">
+            <Icon name="info" size={16} />
+            {translateText("Activa o actualiza AICore en Android y vuelve a comprobar la disponibilidad de Gemini Nano.")}
+            <button type="button" class="text-button" onClick={refreshStatus}>{translateText("Volver a comprobar")}</button>
+          </div>
+        )}
+        {!useGeminiNano && !geminiApiKey.trim() && (
+          <div class="gemini-unavailable-note">
+            <Icon name="info" size={16} />
+            <span>{translateText("Añade una clave de Gemini API en Perfil para usar el asistente.")}</span>
+            <button type="button" class="text-button" onClick={() => { onClose(); onNavigate("profile"); }}>
+              {translateText("Abrir Perfil")}
+            </button>
+          </div>
+        )}
+        <div class="gemini-chat-list" ref={listRef} aria-live="polite">
+          {!messages.length && (
+            <div class="gemini-welcome">
+              <span class="gemini-welcome-icon"><Icon name="sparkles" size={25} /></span>
+              <strong>{translateText("¿Qué quieres hacer?")}</strong>
+              <p>{translateText("Puedo proponerte una rutina, estimar las calorías de una comida o ayudarte a encontrar una función de ProFit.")}</p>
+              <div class="gemini-suggestions">
+                <button type="button" onClick={() => setInput(translateText("Crea una rutina de 3 días para todo el cuerpo."))}>
+                  <Icon name="dumbbell" size={15} />{translateText("Crear rutina")}
+                </button>
+                <button type="button" onClick={() => imageInput.current?.click()}>
+                  <Icon name="image" size={15} />{translateText("Estimar calorías con una foto")}
+                </button>
+                <button type="button" onClick={() => setInput(translateText("¿Qué puedo hacer en ProFit?"))}>
+                  <Icon name="search" size={15} />{translateText("Consultar la app")}
+                </button>
+              </div>
+            </div>
+          )}
+          {messages.map((message) => (
+            <article class={`gemini-message gemini-message-${message.role}`} key={message.id}>
+              {message.imagePreview && <img class="gemini-message-photo" src={message.imagePreview} alt={translateText("Comida analizada")} />}
+              <p>{message.text}</p>
+              {message.routine && (
+                <div class="gemini-result-card">
+                  <div class="gemini-result-heading">
+                    <div><small>{translateText("Rutina sugerida")}</small><strong>{message.routine.name}</strong></div>
+                    <span>{message.exerciseList.length} {translateText("ejercicios")}</span>
+                  </div>
+                  {message.routine.group && <small class="gemini-result-group">{translateText("Grupo")}: {message.routine.group}</small>}
+                  <div class="gemini-routine-preview">
+                    {message.exerciseList.map(({ exercise, settings }) => (
+                      <div class="gemini-routine-row" key={exercise.id}>
+                        <span>{translateText(exercise.name)}</span>
+                        <small>
+                          {settings.sets ? `${settings.sets} × ${settings.reps || "—"}` : settings.targetMinutes ? `${settings.targetMinutes} min` : translateText("Actividad")}
+                          {settings.restSeconds !== undefined ? ` · ${settings.restSeconds}s` : ""}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                  <Button type="button" onClick={() => addSuggestedRoutine(message)}>
+                    <Icon name="plus" size={15} />{translateText("Añadir rutina")}
+                  </Button>
+                </div>
+              )}
+              {message.calories && (
+                <div class="gemini-result-card gemini-calorie-result">
+                  <label class="gemini-kcal-edit">
+                    <span>{translateText("Calorías estimadas")}</span>
+                    <span><input type="number" min="0" max="5000" step="1" value={message.calories.kcal} onInput={(event) => updateEstimatedCalories(message.id, event.currentTarget.value)} /> kcal</span>
+                  </label>
+                  {message.calories.foods.length > 0 && <div class="gemini-food-list">{message.calories.foods.map((food, index) => <span key={`${message.id}-${index}`}>{translateText(food.name)} <small>{food.kcal} kcal</small></span>)}</div>}
+                  <small class="gemini-estimate-note">{translateText("Estimación aproximada según lo visible; revisa la cantidad antes de registrarla.")}</small>
+                  <Button type="button" disabled={message.calories.logged || !message.calories.kcal} onClick={() => registerCalories(message)}>
+                    <Icon name={message.calories.logged ? "check" : "plus"} size={15} />
+                    {translateText(message.calories.logged ? "Calorías registradas" : "Registrar consumo de calorías")}
+                  </Button>
+                </div>
+              )}
+              {message.navigation && (
+                <Button type="button" variant="quiet" onClick={() => openPage(message.navigation)}>
+                  <Icon name="arrow" size={15} />
+                  {translateText("Abrir sección")}: {translateText({ home: "Inicio", training: "Entrenamientos", profile: "Perfil" }[message.navigation])}
+                </Button>
+              )}
+            </article>
+          ))}
+          {loading && <div class="gemini-thinking"><span /><span /><span />{translateText("La IA está preparando una respuesta…")}</div>}
+        </div>
+        <div class="gemini-composer-area">
+          {photo && (
+            <div class="gemini-photo-pending">
+              <img src={photo.dataUrl} alt={translateText("Foto lista para analizar")} />
+              <span>{translateText("Foto lista para analizar")}</span>
+              <button type="button" class="icon-button" onClick={() => setPhoto(null)} aria-label={translateText("Quitar foto")}><Icon name="close" size={16} /></button>
+            </div>
+          )}
+          {error && <div class="gemini-error" role="status">{error}</div>}
+          <form class="gemini-composer" onSubmit={send}>
+            <input ref={imageInput} type="file" accept="image/*" hidden onChange={(event) => { void choosePhoto(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
+            <button type="button" class="icon-button gemini-attach" onClick={() => imageInput.current?.click()} disabled={!assistantReady || loading} aria-label={translateText("Añadir foto de comida")}><Icon name="image" size={19} /></button>
+            <textarea ref={messageInput} value={input} onInput={(event) => { const field = event.currentTarget; setInput(field.value); field.style.height = "auto"; field.style.height = `${Math.min(field.scrollHeight, 120)}px`; }} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(event); } }} enterKeyHint="send" placeholder={translateText("Pregunta algo o describe la rutina que buscas…")} rows="1" disabled={!assistantReady || loading} />
+            <Button type="submit" disabled={!assistantReady || loading || (!input.trim() && !photo)} aria-label={translateText("Enviar")}><Icon name="arrow" size={17} /></Button>
+          </form>
+          <small class="gemini-privacy-note"><Icon name="lock" size={12} />{translateText(useGeminiNano
+            ? "Gemini Nano procesa la consulta y la foto en este dispositivo; no se envían a Google."
+            : "El modo API envía a Google Gemini tu consulta, la imagen y el contexto de entrenamiento.")}</small>
+        </div>
+      </section>
+    </Modal>
   );
 }
 
@@ -8549,9 +9388,6 @@ function RoutineGroupForm({ groups, onClose, onSave }) {
         </label>
         {error && <span class="exercise-media-error">{error}</span>}
         <div class="form-actions">
-          <Button variant="quiet" type="button" onClick={onClose}>
-            Cancelar
-          </Button>
           <Button type="submit">
             <Icon name="folderPlus" size={15} /> Crear grupo
           </Button>
@@ -8801,17 +9637,15 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
               <Icon name="upload" size={14} /> Elegir
             </Button>
           </div>
-          <div class="exercise-preview-thumb">
-            {previewFile ? (
-              <img src={localPreviewUrl} alt="Imagen de vista previa" />
-            ) : (form.previewAssetId || form.poster) && !removePreview ? (
-              <ExerciseThumb exercise={previewExercise} />
-            ) : (
-              <span>
-                <Icon name="image" size={16} /> Sin portada personalizada
-              </span>
-            )}
-          </div>
+          {(previewFile || ((form.previewAssetId || form.poster) && !removePreview)) && (
+            <div class="exercise-preview-thumb">
+              {previewFile ? (
+                <img src={localPreviewUrl} alt="Imagen de vista previa" />
+              ) : (
+                <ExerciseThumb exercise={previewExercise} />
+              )}
+            </div>
+          )}
           {fileError && <span class="exercise-media-error">{fileError}</span>}
           {(mediaFile || form.mediaAssetId) && (
             <button
@@ -9032,9 +9866,6 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
           />
         </label>
         <div class="form-actions">
-          <Button variant="quiet" type="button" onClick={onClose}>
-            Cancelar
-          </Button>
           <Button type="submit">
             <Icon name="check" size={15} /> Guardar ejercicio
           </Button>
@@ -9207,6 +10038,7 @@ function WorkoutModal({
         linkedSetFields: storedDraft.linkedSetFields || {},
         setCounts: storedDraft.setCounts || {},
         restSeconds: storedDraft.restSeconds || {},
+        ignoreRests: Boolean(storedDraft.ignoreRests),
         restEndsAt: storedDraft.restEndsAt || {},
         restAutoPausedWorkout: Boolean(storedDraft.restAutoPausedWorkout),
         completedSets: storedDraft.completedSets || {},
@@ -9276,11 +10108,16 @@ function WorkoutModal({
           }),
         ),
   );
+  const [ignoreRests, setIgnoreRests] = useState(() =>
+    draftMatches ? Boolean(savedDraft.ignoreRests) : false,
+  );
   const [restEndsAt, setRestEndsAt] = useState(() =>
-    draftMatches ? savedDraft.restEndsAt || {} : {},
+    draftMatches && !savedDraft.ignoreRests ? savedDraft.restEndsAt || {} : {},
   );
   const [restAutoPausedWorkout, setRestAutoPausedWorkout] = useState(() =>
-    draftMatches ? Boolean(savedDraft.restAutoPausedWorkout) : false,
+    draftMatches && !savedDraft.ignoreRests
+      ? Boolean(savedDraft.restAutoPausedWorkout)
+      : false,
   );
   const finishedRestTimers = useRef(new Set());
   const [completedSets, setCompletedSets] = useState(() =>
@@ -9453,6 +10290,7 @@ function WorkoutModal({
         linkedSetFields,
         setCounts,
         restSeconds,
+        ignoreRests,
         restEndsAt,
         restAutoPausedWorkout,
         completedSets,
@@ -9467,6 +10305,7 @@ function WorkoutModal({
     linkedSetFields,
     setCounts,
     restSeconds,
+    ignoreRests,
     restEndsAt,
     restAutoPausedWorkout,
     completedSets,
@@ -9852,7 +10691,22 @@ function WorkoutModal({
     }
     setSetCounts((current) => ({ ...current, [id]: nextCount }));
   };
+  const changeIgnoreRests = (enabled) => {
+    setIgnoreRests(Boolean(enabled));
+    if (!enabled) return;
+    const hasRunningRest = selected.some(
+      (id) => Number(restEndsAt[id]) > Date.now(),
+    );
+    if (!hasRunningRest) return;
+    setRestEndsAt((current) =>
+      Object.fromEntries(Object.keys(current).map((id) => [id, 0])),
+    );
+    const resumeWorkout = restAutoPausedWorkout && session.paused;
+    setRestAutoPausedWorkout(false);
+    if (resumeWorkout) onResume();
+  };
   const startRestTimer = (id) => {
+    if (ignoreRests) return;
     const seconds = safeRestSeconds(restSeconds[id], 60);
     if (seconds <= 0) return;
     const resumeWorkoutAfterRest = restAutoPausedWorkout || !session.paused;
@@ -10088,31 +10942,44 @@ function WorkoutModal({
                       </button>
                     )}
 
-                    <Button
-                      variant={session.paused ? "primary" : "quiet"}
-                      className="session-pause-button"
-                      aria-label={
-                        session.paused
-                          ? "Continuar entrenamiento"
-                          : "Pausar entrenamiento"
-                      }
-                      onClick={toggleSessionPause}
-                    >
-                      <Icon
-                        name={session.paused ? "play" : "pause"}
-                        size={14}
-                      />
-                    </Button>
+                    <div class="session-primary-actions">
+                      <Button
+                        variant={session.paused ? "primary" : "quiet"}
+                        className="session-pause-button"
+                        aria-label={
+                          session.paused
+                            ? "Continuar entrenamiento"
+                            : "Pausar entrenamiento"
+                        }
+                        onClick={toggleSessionPause}
+                      >
+                        <Icon
+                          name={session.paused ? "play" : "pause"}
+                          size={14}
+                        />
+                      </Button>
 
-                    <button
-                      type="button"
-                      class="session-cancel-button"
-                      aria-label="Cancelar sesión"
-                      title="Cancelar sesión"
-                      onClick={onCancel}
-                    >
-                      <Icon name="trash" size={14} />
-                    </button>
+                      <button
+                        type="button"
+                        class={`session-ignore-rests ${ignoreRests ? "active" : ""}`}
+                        aria-label={translateText("Ignorar descansos")}
+                        aria-pressed={ignoreRests}
+                        title={translateText("Ignorar descansos")}
+                        onClick={() => changeIgnoreRests(!ignoreRests)}
+                      >
+                        <Icon name="clockOff" size={17} />
+                      </button>
+
+                      <button
+                        type="button"
+                        class="session-cancel-button"
+                        aria-label="Cancelar sesión"
+                        title="Cancelar sesión"
+                        onClick={onCancel}
+                      >
+                        <Icon name="trash" size={14} />
+                      </button>
+                    </div>
 
                     {notificationPermission === "default" &&
                       Capacitor.getPlatform() !== "android" && (
@@ -10124,13 +10991,6 @@ function WorkoutModal({
                           <Icon name="calendar" size={13} />
                           Activar avisos
                         </button>
-                      )}
-
-                    {notificationPermission === "granted" &&
-                      Capacitor.getPlatform() !== "android" && (
-                        <span class="notification-enabled">
-                          Avisos activados
-                        </span>
                       )}
 
                     {notificationPermission === "unsupported" &&
@@ -10613,26 +11473,30 @@ function WorkoutModal({
               <div class="finish-duration-icon">
                 <Icon name="clock" size={21} />
               </div>
+              <div class="finish-duration-top-actions">
+                <button
+                  type="button"
+                  class="finish-duration-nav-button is-danger"
+                  aria-label="Cancelar sesión"
+                  title="Cancelar sesión"
+                  onClick={onCancel}
+                >
+                  <Icon name="trash" size={17} />
+                </button>
+                <button
+                  type="button"
+                  class="finish-duration-nav-button"
+                  aria-label="Volver a la sesión"
+                  title="Volver a la sesión"
+                  onClick={returnToSession}
+                >
+                  <Icon name="play" size={17} />
+                </button>
+              </div>
 
               <div class="eyebrow">SESIÓN COMPLETADA</div>
               <h2>{formatElapsed(elapsedSeconds)}</h2>
               <p>¿Este es el tiempo que has tardado en entrenar?</p>
-
-              <div class="finish-duration-actions">
-                <Button
-                  variant="quiet"
-                  className="cancel-session-link"
-                  onClick={onCancel}
-                >
-                  <Icon name="trash" size={14} />
-                  Cancelar sesión
-                </Button>
-                <Button variant="quiet" onClick={returnToSession}>
-                  <Icon name="play" size={14} />
-                  Volver a la sesión
-                </Button>
-              </div>
-              <span class="finish-duration-divider" aria-hidden="true" />
 
               {!adjustDuration ? (
                 <div class="finish-duration-actions">
@@ -10666,7 +11530,6 @@ function WorkoutModal({
                       }
                     />
                   </label>
-                  <span class="finish-duration-divider" aria-hidden="true" />
                   <div class="finish-duration-actions adjust-duration-actions">
                     <Button
                       variant="quiet"
@@ -10690,7 +11553,7 @@ function WorkoutModal({
         <Modal
           title="Entrenamiento incompleto"
           onClose={() => setIncompleteExerciseCount(null)}
-          className="incomplete-workout-modal"
+          className="confirmation-layer incomplete-workout-modal"
         >
           <div class="confirm-modal-content">
             <span class="confirm-modal-icon">
@@ -10757,7 +11620,7 @@ function WorkoutModal({
         <ExercisePreviewModal
           exercise={preview}
           onClose={() => setPreview(null)}
-          onTop={Boolean(pickerMode)}
+          onTop
         />
       )}
     </>
@@ -11862,9 +12725,6 @@ function MeasureModal({
           )}
         </section>
         <div class="form-actions">
-          <Button variant="quiet" type="button" onClick={closeModal}>
-            Cancelar
-          </Button>
           <Button type="submit" disabled={saving || photoProcessing}>
             <Icon name="check" size={15} />{" "}
             {saving
@@ -12073,6 +12933,19 @@ function App() {
   const nativeImportQueued = useRef(false);
   const [, setLocaleRevision] = useState(0);
   const [tab, setTabState] = useState("home");
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(() =>
+    Boolean(loadJson("profit-ai-enabled", true)),
+  );
+  const [geminiApiKey, setGeminiApiKey] = useState(() =>
+    String(loadJson("profit-gemini-api-key", "") || ""),
+  );
+  const [useGeminiNano, setUseGeminiNano] = useState(() =>
+    Boolean(loadJson("profit-ai-use-nano", Capacitor.getPlatform() === "android")),
+  );
+  const [geminiNanoStatus, setGeminiNanoStatus] = useState(
+    Capacitor.getPlatform() === "android" ? "checking" : "unsupported",
+  );
   const [pageTransition, setPageTransition] = useState(null);
   const [dashboardLayout, setDashboardLayout] = useState(loadDashboardLayout);
   const [dashboardLayoutOpen, setDashboardLayoutOpen] = useState(false);
@@ -12403,6 +13276,40 @@ function App() {
     setTab("profile");
     setEditingMeasure(null);
     setMeasureOpen(true);
+  };
+
+  useEffect(() => {
+    let current = true;
+    if (Capacitor.getPlatform() !== "android") {
+      setGeminiNanoStatus("unsupported");
+      return () => { current = false; };
+    }
+    GeminiNano.checkAvailability()
+      .then((result) => {
+        if (current) setGeminiNanoStatus(result?.status || "unavailable");
+      })
+      .catch(() => {
+        if (current) setGeminiNanoStatus("unavailable");
+      });
+    return () => { current = false; };
+  }, []);
+  const geminiNanoCompatible = ["available", "downloadable", "downloading", "module_missing"].includes(geminiNanoStatus);
+  useEffect(() => {
+    if (["unsupported", "unavailable"].includes(geminiNanoStatus) && useGeminiNano)
+      setUseGeminiNano(false);
+  }, [geminiNanoStatus]);
+  useEffect(() => {
+    localStorage.setItem("profit-ai-enabled", JSON.stringify(aiEnabled));
+  }, [aiEnabled]);
+  useEffect(() => {
+    localStorage.setItem("profit-gemini-api-key", JSON.stringify(geminiApiKey));
+  }, [geminiApiKey]);
+  useEffect(() => {
+    localStorage.setItem("profit-ai-use-nano", JSON.stringify(useGeminiNano));
+  }, [useGeminiNano]);
+  const updateAiEnabled = (enabled) => {
+    setAiEnabled(enabled);
+    if (!enabled) setAssistantOpen(false);
   };
 
   useEffect(() => {
@@ -13477,9 +14384,11 @@ function App() {
     setTab("training");
     setSelectedRoutine(savedRoutine);
     setToast(
-      savedRoutine.exercises.length
-        ? "Rutina actualizada"
-        : "Rutina creada · ahora puedes añadir ejercicios",
+      translateText(
+        savedRoutine.exercises.length
+          ? "Rutina actualizada"
+          : "Rutina creada · ahora puedes añadir ejercicios",
+      ),
     );
   };
   const updateRoutine = (routine) => {
@@ -14533,6 +15442,7 @@ function App() {
         onNavigate={setTab}
         onStartWorkout={() => !activeSession && setWorkoutChooserOpen(true)}
         onWorkoutOpen={setSelectedWorkout}
+        onOpenAssistant={aiEnabled ? () => setAssistantOpen(true) : null}
         unit={unit}
         goal={goal}
         weeklyGoalHistory={weeklyGoalHistory}
@@ -14624,6 +15534,14 @@ function App() {
         onTheme={setTheme}
         language={language}
         onLanguage={chooseLanguage}
+        aiEnabled={aiEnabled}
+        onAiEnabled={updateAiEnabled}
+        geminiApiKey={geminiApiKey}
+        onGeminiApiKey={setGeminiApiKey}
+        useGeminiNano={useGeminiNano}
+        onUseGeminiNano={setUseGeminiNano}
+        geminiNanoCompatible={geminiNanoCompatible}
+        geminiNanoStatus={geminiNanoStatus}
         soundsMuted={soundsMuted}
         onSoundsMuted={updateSoundsMuted}
         waterGoal={effectiveWaterGoal}
@@ -14739,6 +15657,23 @@ function App() {
           ))}
         </nav>
       </main>
+      {assistantOpen && aiEnabled && (
+        <GeminiAssistantModal
+          exercises={exercises}
+          routines={routines}
+          routineGroups={routineGroups}
+          workouts={workouts}
+          todayKcal={todayKcal}
+          kcalGoal={effectiveKcalGoal}
+          language={resolvedLanguage}
+          useGeminiNano={useGeminiNano && geminiNanoCompatible}
+          geminiApiKey={geminiApiKey}
+          onClose={() => setAssistantOpen(false)}
+          onSaveRoutine={saveRoutine}
+          onAddKcal={addKcal}
+          onNavigate={setTab}
+        />
+      )}
       {dashboardLayoutOpen && (
         <DashboardLayoutModal
           layout={dashboardLayout}

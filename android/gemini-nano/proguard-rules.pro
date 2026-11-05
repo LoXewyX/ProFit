@@ -1,0 +1,1 @@
+-keep class com.loxewyx.profit.GeminiNanoEngine { public *; }
