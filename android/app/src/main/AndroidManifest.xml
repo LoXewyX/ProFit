@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -16,6 +17,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <!-- Gemini Nano is an on-demand feature. Its ML Kit provider is only
+             available inside that split, so it must not start with the base APK. -->
+        <provider
+            android:name="com.google.mlkit.common.internal.MlKitInitProvider"
+            tools:node="remove" />
 
         <activity
             android:name=".MainActivity"

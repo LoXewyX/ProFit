@@ -1307,6 +1307,7 @@ const icons = {
       <path d="m16 16 4.5 4.5" />
     </>
   ),
+  menu: <path d="M4 6h16M4 12h16M4 18h16" />,
   plus: (
     <>
       <path d="M12 5v14M5 12h14" />
@@ -1396,6 +1397,12 @@ const icons = {
     <>
       <path d="M12 16V4m-5 5 5-5 5 5" />
       <path d="M4 16v4h16v-4" />
+    </>
+  ),
+  save: (
+    <>
+      <path d="M5 3h12l4 4v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M7 3v6h9V3M7 21v-7h10v7" />
     </>
   ),
   download: (
@@ -1819,7 +1826,7 @@ function DailyIntakeCards({
       hidden={hidden}
       aria-label="Consumo de hoy"
     >
-      <article class="panel intake-card water-card" onClick={requestWaterMotion}>
+      <article id="home-hydration" class="panel intake-card water-card" onClick={requestWaterMotion}>
         <WaterGlass percent={waterPercent} tilt={waterTilt} />
         <div class="intake-card-content">
           <div class="intake-heading">
@@ -1873,7 +1880,7 @@ function DailyIntakeCards({
           </div>
         </div>
       </article>
-      <article class="panel intake-card kcal-card">
+      <article id="home-calories" class="panel intake-card kcal-card">
         <CalorieFlame growth={kcalGrowth} />
         <div class="intake-card-content">
           <div class="intake-heading">
@@ -1982,6 +1989,11 @@ const dashboardCards = [
   },
   { id: "hero", label: "Tu próximo paso", detail: "Acceso rápido a entrenar" },
   {
+    id: "intake",
+    label: "Hidratación y consumo de calorías",
+    detail: "Consumo diario",
+  },
+  {
     id: "stats",
     label: "Resumen semanal",
     detail: "Sesiones, volumen y series",
@@ -1995,11 +2007,6 @@ const dashboardCards = [
     id: "medals",
     label: "Medallas por ejercicio",
     detail: "Tus mejores marcas personales",
-  },
-  {
-    id: "intake",
-    label: "Hidratación y consumo de calorías",
-    detail: "Consumo diario",
   },
   {
     id: "weekly",
@@ -2018,13 +2025,19 @@ const dashboardCards = [
   },
 ];
 const defaultDashboardOrder = dashboardCards.map((card) => card.id);
+const previousDefaultDashboardOrder = [
+  "milestone", "hero", "stats", "goalWeeks", "medals", "intake", "weekly", "muscles", "activity",
+];
 const loadDashboardLayout = () => {
   const saved = loadJson("profit-dashboard-layout", null);
   const valid = Array.isArray(saved?.order)
     ? saved.order.filter((id) => defaultDashboardOrder.includes(id))
     : [];
+  const savedOrderIsDefault = valid.length === previousDefaultDashboardOrder.length
+    && valid.every((id, index) => id === previousDefaultDashboardOrder[index]);
+  const savedOrder = savedOrderIsDefault ? defaultDashboardOrder : valid;
   return {
-    order: [...new Set([...valid, ...defaultDashboardOrder])],
+    order: [...new Set([...savedOrder, ...defaultDashboardOrder])],
     hidden: Array.isArray(saved?.hidden)
       ? saved.hidden.filter((id) => defaultDashboardOrder.includes(id))
       : [],
@@ -2304,6 +2317,7 @@ function Dashboard({
         </div>
       </section>
       <section
+        id="home-milestone"
         class="achievement-card achievement-card-top"
         data-dashboard-card="milestone"
         style={{ order: cardOrder("milestone") }}
@@ -2464,6 +2478,7 @@ function Dashboard({
         hidden={!cardVisible("intake")}
       />
       <section
+        id="home-weekly"
         class="panel weekly-panel"
         data-dashboard-card="weekly"
         style={{ order: cardOrder("weekly") }}
@@ -2502,6 +2517,7 @@ function Dashboard({
         </div>
       </section>
       <section
+        id="home-muscles"
         class="panel muscle-panel"
         data-dashboard-card="muscles"
         style={{ order: cardOrder("muscles") }}
@@ -2516,6 +2532,7 @@ function Dashboard({
       </section>
       <section
         class="panel activity-panel"
+        id="home-activity"
         data-dashboard-card="activity"
         style={{ order: cardOrder("activity") }}
         hidden={!cardVisible("activity")}
@@ -3100,12 +3117,16 @@ function TrainingPage({
   onDeleteRoutineGroup,
   onStartRoutine,
   onImportFile,
+  requestedSection,
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("Todos");
   const metric = "weight";
   const range = "30d";
   const [section, setSection] = useState("routines");
+  useEffect(() => {
+    if (requestedSection?.section) setSection(requestedSection.section);
+  }, [requestedSection?.nonce]);
   const [visibleCount, setVisibleCount] = useState(24);
   const routineImport = useRef(null);
   const exerciseImport = useRef(null);
@@ -4652,9 +4673,9 @@ function WeeklyGoalAchievements({
   );
 }
 
-function SettingsSectionLabel({ label, description, first = false }) {
+function SettingsSectionLabel({ label, description, first = false, id }) {
   return (
-    <div class={`settings-section-label ${first ? "first" : ""}`}>
+    <div id={id} class={`settings-section-label ${first ? "first" : ""}`}>
       <span>{translateText(label)}</span>
       <small>{translateText(description)}</small>
     </div>
@@ -4736,8 +4757,27 @@ function ProfilePage({
   const avatarInput = useRef(null);
   const backupInput = useRef(null);
   const displayName = name.trim();
+  const [geminiKeyCheck, setGeminiKeyCheck] = useState("idle");
   const [waterGoalDraft, setWaterGoalDraft] = useState(String(waterGoal));
   const [kcalGoalDraft, setKcalGoalDraft] = useState(String(kcalGoal));
+  const verifyGeminiApiKey = async () => {
+    const apiKey = String(geminiApiKey || "").trim();
+    if (!apiKey || geminiKeyCheck === "checking") return;
+    setGeminiKeyCheck("checking");
+    try {
+      const response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash",
+        { headers: { "x-goog-api-key": apiKey } },
+      );
+      if (response.ok) setGeminiKeyCheck("valid");
+      else if (response.status === 401 || response.status === 403) setGeminiKeyCheck("invalid");
+      else if (response.status === 404) setGeminiKeyCheck("model_missing");
+      else if (response.status === 429) setGeminiKeyCheck("rate_limited");
+      else setGeminiKeyCheck("unavailable");
+    } catch {
+      setGeminiKeyCheck("network_error");
+    }
+  };
   useEffect(() => setWaterGoalDraft(String(waterGoal)), [waterGoal]);
   useEffect(() => setKcalGoalDraft(String(kcalGoal)), [kcalGoal]);
   const last30 = workouts.filter((workout) => workout.date >= dayOffset(29));
@@ -4857,7 +4897,7 @@ function ProfilePage({
             </span>
           </div>
         </article>
-        <article class="panel profile-consistency">
+        <article id="profile-consistency" class="panel profile-consistency">
           <div class="consistency-orb">
             <div class="consistency-ring">
               <span>
@@ -4901,7 +4941,7 @@ function ProfilePage({
         </article>
       </section>
       <section class="profile-columns">
-        <div class="panel calendar-panel">
+        <div id="profile-calendar" class="panel calendar-panel">
           <SectionHeading
             eyebrow="HISTORIAL"
             title="Tu calendario"
@@ -4923,7 +4963,7 @@ function ProfilePage({
             <span>Más sesiones</span>
           </div>
         </div>
-        <div class="panel measures-panel">
+        <div id="profile-body" class="panel measures-panel">
           <SectionHeading
             eyebrow="CUERPO"
             title="Medidas"
@@ -5079,7 +5119,7 @@ function ProfilePage({
       <section class="panel category-balance-panel">
         <CategoryBalance workouts={workouts} exercises={exercises} />
       </section>
-      <section class="panel profile-muscles">
+      <section id="profile-muscles" class="panel profile-muscles">
         <SectionHeading
           eyebrow="DISTRIBUCIÓN DEL ENTRENAMIENTO"
           title="Así repartes tu trabajo"
@@ -5091,7 +5131,7 @@ function ProfilePage({
         />
       </section>
       <section class="profile-columns profile-bottom">
-        <div class="panel bests-panel">
+        <div id="profile-records" class="panel bests-panel">
           <SectionHeading
             eyebrow="PROGRESO"
             title="Ejercicios favoritos"
@@ -5134,6 +5174,7 @@ function ProfilePage({
           />
           <SettingsSectionLabel
             first
+            id="profile-settings"
             label="TU PERFIL"
             description="Foto y nombre que identifican tu actividad en este dispositivo."
           />
@@ -5280,6 +5321,7 @@ function ProfilePage({
             </select>
           </label>
           <SettingsSectionLabel
+            id="profile-daily-goals"
             label="OBJETIVOS DIARIOS"
             description="Las metas automáticas consideran edad, peso, altura y género; puedes ajustarlas manualmente."
           />
@@ -5392,6 +5434,7 @@ function ProfilePage({
           </div>
           <section
             class="profile-reminders-section"
+            id="profile-reminders"
             aria-labelledby="profile-reminders-heading"
           >
             <div class="profile-reminders-heading">
@@ -5694,6 +5737,7 @@ function ProfilePage({
             </select>
           </label>
           <SettingsSectionLabel
+            id="profile-ai-settings"
             label="INTELIGENCIA ARTIFICIAL"
             description="Activa el asistente y elige cómo quieres procesar tus consultas."
           />
@@ -5717,7 +5761,10 @@ function ProfilePage({
                   <input
                     type="password"
                     value={geminiApiKey}
-                    onInput={(event) => onGeminiApiKey(event.currentTarget.value)}
+                    onInput={(event) => {
+                      onGeminiApiKey(event.currentTarget.value);
+                      setGeminiKeyCheck("idle");
+                    }}
                     placeholder="AIza…"
                     autocomplete="off"
                     autocapitalize="off"
@@ -5727,6 +5774,42 @@ function ProfilePage({
                     {translateText("Se guarda en este dispositivo. Una app estática no puede proteger la clave; el modo API envía a Google consultas, imágenes y contexto de entrenamiento.")}
                   </small>
                 </label>
+                <div class="ai-api-key-actions">
+                  <a
+                    href="https://aistudio.google.com/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {translateText("Obtener clave en Google AI Studio")}
+                    <Icon name="external" size={13} />
+                  </a>
+                  <button
+                    type="button"
+                    class="ai-key-check-button"
+                    onClick={verifyGeminiApiKey}
+                    disabled={!String(geminiApiKey || "").trim() || geminiKeyCheck === "checking"}
+                  >
+                    {geminiKeyCheck === "checking"
+                      ? translateText("Verificando clave…")
+                      : translateText("Verificar clave")}
+                  </button>
+                </div>
+                {geminiKeyCheck !== "idle" && geminiKeyCheck !== "checking" && (
+                  <small
+                    class={`ai-key-check-status ${geminiKeyCheck === "valid" ? "is-valid" : "is-error"}`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {translateText({
+                      valid: "La clave es válida y el modelo está disponible.",
+                      invalid: "La clave no es válida o no tiene acceso al modelo.",
+                      model_missing: "La clave se reconoce, pero el modelo no está disponible para este proyecto.",
+                      rate_limited: "Google ha limitado las verificaciones. Inténtalo más tarde.",
+                      network_error: "No se pudo verificar la clave. Comprueba la conexión.",
+                      unavailable: "Google no pudo verificar la clave ahora mismo.",
+                    }[geminiKeyCheck])}
+                  </small>
+                )}
                 <label class={`ai-nano-toggle ${geminiNanoCompatible ? "" : "is-disabled"}`}>
                   <input
                     type="checkbox"
@@ -5773,6 +5856,7 @@ function ProfilePage({
             </label>
           </div>
           <SettingsSectionLabel
+            id="profile-data"
             label="DATOS Y PRIVACIDAD"
             description="Gestiona las copias de seguridad y el almacenamiento local de tus fotos."
           />
@@ -5831,6 +5915,7 @@ function ProfilePage({
           <button
             type="button"
             class="delete-data-action profile-data-card"
+            id="profile-delete-workouts"
             onClick={onDeleteWorkouts}
           >
             <span class="delete-data-icon">
@@ -7399,6 +7484,7 @@ function MeasureChart({ measures, unit = "kg", heightUnit = "cm" }) {
 
 function Modal({
   title,
+  headerActions,
   onClose,
   children,
   wide = false,
@@ -7528,6 +7614,7 @@ function Modal({
       >
         <div class="modal-header">
           <div class="eyebrow">PROFIT</div>
+          {headerActions && <div class="modal-header-actions">{headerActions}</div>}
           {dismissible && (
             <button
               class="icon-button modal-close-button"
@@ -7561,11 +7648,203 @@ const assistantNumber = (value, fallback, minimum, maximum) => {
     : safeFallback;
 };
 
+const cleanAssistantChats = (value) =>
+  (Array.isArray(value) ? value : [])
+    .filter((chat) => chat && typeof chat.id === "string" && Array.isArray(chat.messages))
+    .slice(-20)
+    .map((chat) => ({
+      id: chat.id.slice(0, 80),
+      title: assistantPlainText(chat.title, 70) || translateText("Nuevo chat"),
+      titleEdited: chat.titleEdited === true,
+      createdAt: Number(chat.createdAt) || Date.now(),
+      updatedAt: Number(chat.updatedAt) || Date.now(),
+      messages: chat.messages.slice(-40).flatMap((message) => {
+        if (!message || !["user", "assistant"].includes(message.role)) return [];
+        const safe = {
+          id: assistantPlainText(message.id, 80) || uid(),
+          role: message.role,
+          text: assistantPlainText(message.text, 700),
+        };
+        if (message.role === "user" && (message.imagePreview || message.photoAttached)) safe.photoAttached = true;
+        if (message.role === "assistant" && message.routine && typeof message.routine === "object") {
+          const ids = [...new Set((Array.isArray(message.routine.exercises) ? message.routine.exercises : [])
+            .filter((id) => typeof id === "string")
+            .slice(0, 20))];
+          const settings = {};
+          ids.forEach((id) => {
+            const value = message.routine.exerciseSettings?.[id];
+            if (!value || typeof value !== "object") return;
+            settings[id] = {
+              ...(value.sets !== undefined ? { sets: assistantNumber(value.sets, 3, 1, 8) } : {}),
+              ...(value.reps !== undefined ? { reps: assistantPlainText(value.reps, 14) } : {}),
+              ...(value.targetMinutes !== undefined ? { targetMinutes: assistantNumber(value.targetMinutes, 20, 1, 180) } : {}),
+              ...(value.restSeconds !== undefined ? { restSeconds: assistantNumber(value.restSeconds, 60, 0, 300) } : {}),
+              ...(value.comment ? { comment: assistantPlainText(value.comment, 120) } : {}),
+            };
+          });
+          safe.routine = {
+            id: assistantPlainText(message.routine.id, 80),
+            name: assistantPlainText(message.routine.name, 60),
+            group: assistantPlainText(message.routine.group, 40),
+            note: assistantPlainText(message.routine.note, 250),
+            exercises: ids,
+            exerciseSettings: settings,
+          };
+          safe.editingRoutine = Boolean(message.editingRoutine);
+          if (message.customGroupName) safe.customGroupName = assistantPlainText(message.customGroupName, 40);
+          if (message.addExerciseId) safe.addExerciseId = assistantPlainText(message.addExerciseId, 80);
+        }
+        if (message.role === "assistant" && message.exerciseDraft && typeof message.exerciseDraft === "object") {
+          const draft = message.exerciseDraft;
+          safe.exerciseDraft = {
+            name: assistantPlainText(draft.name, 80),
+            muscle: assistantPlainText(draft.muscle, 60),
+            secondary: (Array.isArray(draft.secondary) ? draft.secondary : []).slice(0, 6).map((item) => assistantPlainText(item, 60)).filter(Boolean),
+            equipment: assistantPlainText(draft.equipment, 60),
+            trackSets: draft.trackSets !== false,
+            trackReps: draft.trackReps !== false,
+            trackWeight: draft.trackWeight !== false,
+            sets: assistantNumber(draft.sets, 3, 1, 20),
+            reps: assistantPlainText(draft.reps, 16),
+            rest: assistantNumber(draft.rest, 90, 0, 600),
+            duration: assistantNumber(draft.duration, 20, 1, 180),
+            description: assistantPlainText(draft.description, 500),
+            cues: (Array.isArray(draft.cues) ? draft.cues : []).slice(0, 5).map((item) => assistantPlainText(item, 120)).filter(Boolean),
+            custom: true,
+          };
+        }
+        if (message.role === "assistant" && message.dashboard && typeof message.dashboard === "object") {
+          const allowed = new Set(dashboardCards.map((card) => card.id));
+          safe.dashboard = {
+            order: [...new Set((Array.isArray(message.dashboard.order) ? message.dashboard.order : []).filter((id) => allowed.has(id)))],
+            hidden: [...new Set((Array.isArray(message.dashboard.hidden) ? message.dashboard.hidden : []).filter((id) => allowed.has(id)))],
+          };
+          safe.dashboardApplied = Boolean(message.dashboardApplied);
+        }
+        if (message.role === "assistant" && message.calories && typeof message.calories === "object") {
+          safe.calories = {
+            kcal: assistantNumber(message.calories.kcal, 0, 0, 5000),
+            confidence: ["low", "medium", "high"].includes(message.calories.confidence) ? message.calories.confidence : "medium",
+            foods: (Array.isArray(message.calories.foods) ? message.calories.foods : []).slice(0, 8).map((food) => ({
+              name: assistantPlainText(food?.name, 60),
+              kcal: assistantNumber(food?.kcal, 0, 0, 5000),
+            })).filter((food) => food.name),
+            logged: Boolean(message.calories.logged),
+          };
+        }
+        if (message.role === "assistant" && message.navigation && typeof message.navigation.target === "string") {
+          const target = message.navigation.target;
+          if (Object.hasOwn(assistantNavigationTargets, target) || ["routine", "exercise", "workout"].includes(target)) {
+            safe.navigation = {
+              target,
+              ...(message.navigation.itemId ? { itemId: assistantPlainText(message.navigation.itemId, 80) } : {}),
+            };
+          }
+        }
+        return [safe];
+      }),
+    }));
+
+function loadAssistantChats() {
+  try {
+    return cleanAssistantChats(loadJson("profit-ai-chats", []));
+  } catch {
+    return [];
+  }
+}
+
+const assistantNavigationTargets = {
+  home: "Inicio",
+  "home.startWorkout": "Empezar un entrenamiento",
+  "home.milestone": "Próximo hito",
+  "home.weekly": "Tu ritmo de entrenamiento",
+  "home.muscles": "Músculos trabajados esta semana",
+  "home.hydration": "Hidratación de hoy",
+  "home.calories": "Consumo de calorías",
+  "home.activity": "Actividad reciente",
+  "home.cards": "Tarjetas del inicio",
+  training: "Entrenamientos",
+  "training.startWorkout": "Elegir una rutina para entrenar",
+  "training.session": "Sesión en curso",
+  "training.routines": "Mis rutinas",
+  "training.library": "Biblioteca de ejercicios",
+  "training.createRoutine": "Crear una rutina",
+  "training.createExercise": "Crear un ejercicio",
+  profile: "Perfil",
+  "profile.calendar": "Calendario de entrenamiento",
+  "profile.consistency": "Constancia y objetivo semanal",
+  "profile.body": "Medidas corporales",
+  "profile.muscles": "Distribución muscular",
+  "profile.records": "Récords personales",
+  "profile.settings": "Ajustes del perfil",
+  "profile.aiSettings": "Ajustes de IA",
+  "profile.reminders": "Recordatorios",
+  "profile.dailyGoals": "Objetivos diarios",
+  "profile.measurements": "Historial de pesajes",
+  "profile.addWeighIn": "Añadir pesaje",
+  "profile.photos": "Fotos de progreso",
+  "profile.deleteWorkouts": "Borrar entrenamientos por fecha",
+  "profile.data": "Copia de seguridad",
+  "profile.progress": "Progreso y medidas",
+};
+
+function validateAssistantExercise(candidate, exercises) {
+  if (!candidate || typeof candidate !== "object") return null;
+  const name = assistantPlainText(candidate.name, 80);
+  if (!name) return null;
+  const nameKey = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
+  if (exercises.some((item) =>
+    assistantPlainText(item.name, 80).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase() === nameKey
+  )) return null;
+
+  const muscleOptions = getExerciseMuscleFilters(exercises).slice(1);
+  const muscle = muscleOptions.find((item) =>
+    normalizeMuscleFilterValue(item) === normalizeMuscleFilterValue(candidate.muscle)
+  );
+  if (!muscle) return null;
+  const equipmentOptions = [...new Set(exercises.map((item) => String(item.equipment || "").trim()).filter(Boolean))];
+  const equipment = equipmentOptions.find((item) =>
+    normalizeMuscleFilterValue(item) === normalizeMuscleFilterValue(candidate.equipment)
+  ) || equipmentOptions.find((item) => normalizeMuscleFilterValue(item) === "peso corporal") || equipmentOptions[0] || "Peso corporal";
+  const secondary = (Array.isArray(candidate.secondary) ? candidate.secondary : [])
+    .slice(0, 6)
+    .map((value) => muscleOptions.find((item) => normalizeMuscleFilterValue(item) === normalizeMuscleFilterValue(value)))
+    .filter((value, index, values) => value && value !== muscle && values.indexOf(value) === index);
+  const trackSets = candidate.trackSets !== false;
+  const trackReps = candidate.trackReps !== false;
+  const rawReps = assistantPlainText(candidate.reps, 16);
+  const reps = /^\d{1,2}(?:\s*[-–]\s*\d{1,2})?$/.test(rawReps)
+    ? rawReps.replace(/\s+/g, "")
+    : /^(?:\d{1,3})\s*(?:s|sec|secs|seg|segundos?)$/i.test(rawReps)
+      ? `${assistantNumber(rawReps.match(/\d+/)?.[0], 30, 5, 600)} s`
+      : "8–12";
+  return {
+    name,
+    muscle,
+    secondary,
+    equipment,
+    trackSets,
+    trackReps,
+    trackWeight: trackSets && candidate.trackWeight !== false,
+    sets: assistantNumber(candidate.sets, 3, 1, 20),
+    reps,
+    rest: assistantNumber(candidate.restSeconds, 90, 0, 600),
+    duration: assistantNumber(candidate.duration, 20, 1, 180),
+    description: assistantPlainText(candidate.description, 500),
+    cues: (Array.isArray(candidate.cues) ? candidate.cues : [])
+      .slice(0, 5)
+      .map((cue) => assistantPlainText(cue, 120))
+      .filter(Boolean),
+    custom: true,
+  };
+}
+
 function assistantCandidates(exercises, prompt) {
-  const words = assistantPlainText(prompt, 200)
+  const query = assistantPlainText(prompt, 200)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase()
+    .toLocaleLowerCase();
+  const words = query
     .split(/[^\p{L}\p{N}]+/u)
     .filter((word) => word.length > 2);
   const ranked = exercises
@@ -7573,6 +7852,7 @@ function assistantCandidates(exercises, prompt) {
     .map((exercise) => {
       const searchable = [
         exercise.name,
+        translateText(exercise.name),
         exercise.muscle,
         ...(exercise.secondary || []),
         exercise.equipment,
@@ -7583,10 +7863,18 @@ function assistantCandidates(exercises, prompt) {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLocaleLowerCase();
+      const translatedName = translateText(exercise.name)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase();
+      const canonicalName = String(exercise.name || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase();
       const score = words.reduce(
         (total, word) => total + (searchable.includes(word) ? 1 : 0),
         0,
-      );
+      ) + ([translatedName, canonicalName].some((name) => name && query.includes(name)) ? 12 : 0);
       return { exercise, score, muscle: normalizeMuscleFilterValue(exercise.muscle) };
     })
     .sort((a, b) => b.score - a.score || a.exercise.name.localeCompare(b.exercise.name));
@@ -7597,23 +7885,47 @@ function assistantCandidates(exercises, prompt) {
     if (!muscleBuckets.has(entry.muscle)) muscleBuckets.set(entry.muscle, []);
     muscleBuckets.get(entry.muscle).push(entry);
   });
-  [...muscleBuckets.values()].forEach((bucket) =>
-    bucket.slice(0, 2).forEach(({ exercise }) => selected.set(exercise.id, exercise)),
-  );
+  ranked.filter((entry) => entry.score > 0).slice(0, 30).forEach(({ exercise }) => selected.set(exercise.id, exercise));
+  [...muscleBuckets.values()].forEach((bucket) => {
+    const best = bucket[0]?.exercise;
+    if (best && selected.size < 42 && !selected.has(best.id)) selected.set(best.id, best);
+  });
   ranked.forEach(({ exercise }) => {
-    if (selected.size < 48) selected.set(exercise.id, exercise);
+    if (selected.size < 48 && !selected.has(exercise.id)) selected.set(exercise.id, exercise);
   });
 
   return [...selected.values()].slice(0, 48).map((exercise) => ({
     id: exercise.id,
     name: translateText(exercise.name),
-    muscle: translateText(exercise.muscle || ""),
-    secondary: (exercise.secondary || []).slice(0, 3).map(translateText),
-    equipment: translateText(exercise.equipment || ""),
+    muscle: exercise.muscle || "",
+    secondary: (exercise.secondary || []).slice(0, 3),
+    equipment: exercise.equipment || "",
     timed: isTimedPrescription(exercise.reps),
     sets: exerciseTracksSets(exercise),
     reps: exerciseTracksReps(exercise),
   }));
+}
+
+function assistantRelevantItems(items, prompt, getName, limit = 12) {
+  const query = assistantPlainText(prompt, 200)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase();
+  const words = query.split(/[^\p{L}\p{N}]+/u).filter((word) => word.length > 2);
+  const ranked = (items || []).map((item, index) => {
+    const name = assistantPlainText(getName(item), 80);
+    const normalized = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
+    const score = words.reduce((total, word) => total + (normalized.includes(word) ? 1 : 0), 0)
+      + (normalized && query.includes(normalized) ? 12 : 0);
+    return { item, index, score };
+  }).sort((a, b) => b.score - a.score || a.index - b.index);
+  const matches = ranked.filter((entry) => entry.score > 0).slice(0, limit);
+  const selected = new Map(matches.map(({ item }) => [item.id, item]));
+  for (const item of items || []) {
+    if (selected.size >= limit) break;
+    if (item?.id && !selected.has(item.id)) selected.set(item.id, item);
+  }
+  return [...selected.values()];
 }
 
 function parseAssistantJson(raw) {
@@ -7624,15 +7936,48 @@ function parseAssistantJson(raw) {
   try {
     return JSON.parse(cleaned);
   } catch {
+    // Recover a single JSON object when Gemini adds a short preface or wraps
+    // the object in prose. Counting braces outside quoted strings avoids
+    // truncating valid text fields that themselves contain braces.
     const start = cleaned.indexOf("{");
-    const end = cleaned.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      try {
-        return JSON.parse(cleaned.slice(start, end + 1));
-      } catch { /* Use the readable text fallback below. */ }
+    if (start >= 0) {
+      let depth = 0;
+      let inString = false;
+      let escaped = false;
+      for (let index = start; index < cleaned.length; index += 1) {
+        const character = cleaned[index];
+        if (inString) {
+          if (escaped) escaped = false;
+          else if (character === "\\") escaped = true;
+          else if (character === '"') inString = false;
+          continue;
+        }
+        if (character === '"') inString = true;
+        else if (character === "{") depth += 1;
+        else if (character === "}") {
+          depth -= 1;
+          if (depth === 0) {
+            try {
+              return JSON.parse(cleaned.slice(start, index + 1));
+            } catch { break; }
+          }
+        }
+      }
     }
     return { type: "chat", reply: cleaned };
   }
+}
+
+function assistantRequestMode(question, hasImage = false) {
+  if (hasImage) return "calories";
+  const normalized = assistantPlainText(question, 1000)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase();
+  const asksToNavigate = /\b(?:abrir|abre|ir a|llevame|ve a|muestra|mostrar|navega|obre|obrir|ves a|ensename|open|go to|show|navigate|view|ouvre|ouvrir|montre|voir|offne|oeffne|zeige|gehe zu|apri|mostra|vai a)\b/.test(normalized);
+  const requestsCreation = /\b(?:crea|crear|creame|hazme|disena|sugiere|recomienda|prepara|genera|propone|create|make|build|design|suggest|recommend|prepare|generate|plan me|cree|creer|propose|construis|erstelle|mach|empfiehl|crea|proponi|prepara|costruisci|fes|dissenya|recomana)\b/.test(normalized);
+  const mentionsRoutine = /\b(?:rutina|rutinas|rotina|rotinas|routine|routines|workout(?:\s+plan)?|training\s+(?:plan|program|programme)|trainingsplan|trainingsprogramm|programa\s+de\s+entrenamiento|plan\s+(?:de\s+)?(?:entrenamiento|entrenar|semanal)|programme\s+d[' ]entrainement|programme\s+sportif|piano\s+di\s+allenamento|scheda\s+di\s+allenamento|pla\s+d[' ]entrenament)\b/.test(normalized);
+  return mentionsRoutine && (!asksToNavigate || requestsCreation) ? "routine" : "agent";
 }
 
 function compressAssistantPhoto(file) {
@@ -7739,6 +8084,10 @@ function GeminiAssistantModal({
   routines,
   routineGroups,
   workouts,
+  dashboardLayout,
+  onDashboardLayout,
+  chats,
+  onChats,
   todayKcal,
   kcalGoal,
   language,
@@ -7746,20 +8095,62 @@ function GeminiAssistantModal({
   geminiApiKey,
   onClose,
   onSaveRoutine,
+  onCreateExercise,
   onAddKcal,
   onNavigate,
 }) {
   const [status, setStatus] = useState("checking");
-  const [messages, setMessages] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(() =>
+    String(loadJson("profit-ai-active-chat-id", "") || ""),
+  );
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [deleteChatId, setDeleteChatId] = useState("");
+  const [deleteAllChatsOpen, setDeleteAllChatsOpen] = useState(false);
+  const [editingChatId, setEditingChatId] = useState("");
+  const [editingChatTitle, setEditingChatTitle] = useState("");
   const [input, setInput] = useState("");
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
   const imageInput = useRef(null);
+  const cameraInput = useRef(null);
   const messageInput = useRef(null);
   const listRef = useRef(null);
   const isAndroid = Capacitor.getPlatform() === "android";
+  const activeChat = chats.find((chat) => chat.id === activeChatId) || chats[0];
+  const messages = activeChat?.messages || [];
+  const updateActiveChat = (update) => {
+    if (!activeChat) return;
+    onChats((current) => current.map((chat) =>
+      chat.id === activeChat.id
+        ? { ...update(chat), updatedAt: Date.now() }
+        : chat,
+    ));
+  };
+  const setMessages = (update) => updateActiveChat((chat) => ({
+    ...chat,
+    messages: (typeof update === "function" ? update(chat.messages || []) : update)
+      .slice(-60),
+  }));
+  useEffect(() => {
+    if (activeChat?.id && activeChat.id !== activeChatId)
+      setActiveChatId(activeChat.id);
+    if (!activeChat && !chats.length) {
+      const firstChat = {
+        id: uid(),
+        title: translateText("Nuevo chat"),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        messages: [],
+      };
+      onChats((current) => current.length ? current : [firstChat]);
+      setActiveChatId(firstChat.id);
+    }
+  }, [activeChat?.id, activeChatId, chats.length]);
+  useEffect(() => {
+    if (activeChatId) localStorage.setItem("profit-ai-active-chat-id", JSON.stringify(activeChatId));
+  }, [activeChatId]);
 
   const refreshStatus = async () => {
     if (!isAndroid) {
@@ -7780,6 +8171,100 @@ function GeminiAssistantModal({
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages, loading]);
+  useEffect(() => {
+    const field = messageInput.current;
+    if (!field) return;
+    field.style.height = "auto";
+    field.style.height = `${Math.min(Math.max(field.scrollHeight, 43), 120)}px`;
+  }, [input, language]);
+
+  const createChat = () => {
+    const chat = {
+      id: uid(),
+      title: translateText("Nuevo chat"),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [],
+    };
+    onChats((current) => [chat, ...current].slice(0, 40));
+    setActiveChatId(chat.id);
+    setInput("");
+    setPhoto(null);
+    setError("");
+    setHistoryOpen(false);
+  };
+  const beginEditChatTitle = (chat) => {
+    setEditingChatId(chat.id);
+    setEditingChatTitle(chat.title || "");
+  };
+  const cancelEditChatTitle = () => {
+    setEditingChatId("");
+    setEditingChatTitle("");
+  };
+  const saveEditChatTitle = (chat) => {
+    const title = assistantPlainText(editingChatTitle, 70);
+    if (!title) return;
+    onChats((current) => current.map((item) => item.id === chat.id
+      ? { ...item, title, titleEdited: true, updatedAt: Date.now() }
+      : item));
+    cancelEditChatTitle();
+  };
+  const selectChat = (id) => {
+    setActiveChatId(id);
+    setInput("");
+    setPhoto(null);
+    setError("");
+    setHistoryOpen(false);
+  };
+  const confirmDeleteChat = (id = deleteChatId || activeChat?.id) => {
+    if (!id) return;
+    const remaining = chats.filter((chat) => chat.id !== id);
+    const next = remaining[0] || {
+      id: uid(),
+      title: translateText("Nuevo chat"),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [],
+    };
+    onChats(remaining.length ? remaining : [next]);
+    if (activeChat?.id === id) setActiveChatId(next.id);
+    setDeleteChatId("");
+  };
+  const requestDeleteChat = (id) => {
+    if (!id) return;
+    playWarningSound();
+    setDeleteChatId(id);
+  };
+  const requestDeleteAllChats = () => {
+    if (!chats.length) return;
+    playWarningSound();
+    setDeleteAllChatsOpen(true);
+  };
+  const confirmDeleteAllChats = () => {
+    const next = {
+      id: uid(),
+      title: translateText("Nuevo chat"),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [],
+    };
+    onChats([next]);
+    setActiveChatId(next.id);
+    setDeleteAllChatsOpen(false);
+    cancelEditChatTitle();
+    setInput("");
+    setPhoto(null);
+    setError("");
+  };
+  const recentChats = [...chats].sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+  const deletingChat = chats.find((chat) => chat.id === deleteChatId);
+  const setUserMessage = (message) => {
+    setMessages((current) => [...current, message].slice(-60));
+    if (activeChat && !activeChat.titleEdited && !activeChat.messages?.some((message) => message.role === "user")) {
+      const nextTitle = assistantPlainText(message.text, 42) || translateText("Nuevo chat");
+      updateActiveChat((chat) => ({ ...chat, title: nextTitle }));
+    }
+  };
 
   const assistantStatusText = useGeminiNano ? ({
     checking: "Comprobando Gemini Nano…",
@@ -7832,41 +8317,78 @@ function GeminiAssistantModal({
       es: "Spanish", ca: "Catalan", en: "English", fr: "French",
       de: "German", it: "Italian", pt: "Portuguese",
     }[language] || "English";
+    const relevantRoutines = assistantRelevantItems(routines, question, (routine) => routine.name, useGeminiNano ? 10 : 16);
+    const relevantWorkouts = assistantRelevantItems(workouts, question, (workout) => workout.name, useGeminiNano ? 6 : 8);
     const context = {
       workoutCount: workouts.length,
       workoutsLast7Days: workouts.filter((workout) => {
         const age = (Date.now() - new Date(`${workout.date}T12:00:00`).getTime()) / 86400000;
         return age >= 0 && age < 7;
       }).length,
-      routineNames: routines.slice(0, 20).map((routine) => assistantPlainText(routine.name, 60)),
+      recentWorkouts: relevantWorkouts.map((workout) => ({
+        id: workout.id,
+        name: assistantPlainText(workout.name, 60),
+        date: assistantPlainText(workout.date, 10),
+        exercises: (workout.exercises || []).slice(0, 8).map((exercise) =>
+          assistantPlainText(exercise.name, 60),
+        ),
+      })),
+      routineCatalog: relevantRoutines.map((routine) => ({
+        id: routine.id,
+        name: assistantPlainText(routine.name, 60),
+        group: assistantPlainText(routine.group, 40),
+        exercises: (routine.exercises || []).slice(0, 12).map((id) =>
+          assistantPlainText(exercises.find((exercise) => exercise.id === id)?.name, 60),
+        ),
+      })),
       exerciseCount: exercises.length,
       caloriesLoggedToday: todayKcal,
       calorieGoal: kcalGoal,
+      dashboardCards: dashboardCards.map(({ id, label }) => ({ id, label: translateText(label) })),
+      dashboardLayout,
     };
-    const candidates = mode === "routine" ? assistantCandidates(exercises, question) : [];
-    const history = messages.slice(-6).map((message) => ({
+    const candidates = mode === "calories"
+      ? []
+      : assistantCandidates(exercises, question).slice(0, mode === "routine" ? (useGeminiNano ? 24 : 36) : (useGeminiNano ? 18 : 24));
+    const history = messages.slice(-(useGeminiNano ? 3 : 4)).map((message) => ({
       role: message.role,
-      text: assistantPlainText(message.text, 500),
+      text: assistantPlainText(message.text, useGeminiNano ? 250 : 350),
     }));
     const schemas = {
       chat: '{"type":"chat","reply":"..."}',
-      navigate: '{"type":"navigate","reply":"...","target":"home|training|profile"}',
+      navigate: '{"type":"navigate","reply":"...","target":"one destination ID from the list","itemId":"exact local ID only when target is routine, exercise, or workout"}',
       routine: '{"type":"routine","reply":"...","routine":{"name":"...","group":"...","exercises":[{"id":"ID_FROM_LIST","sets":3,"reps":"8-12","targetMinutes":0,"restSeconds":90,"comment":""}]}}',
+      exercise: '{"type":"exercise","reply":"...","exercise":{"name":"...","muscle":"exact allowed muscle","secondary":["exact allowed muscle"],"equipment":"exact allowed equipment","trackSets":true,"trackReps":true,"trackWeight":true,"sets":3,"reps":"8-12","restSeconds":90,"duration":20,"description":"...","cues":["..."]}}',
+      dashboard: '{"type":"dashboard","reply":"...","layout":{"order":["all card IDs in the requested order"],"hidden":["card IDs to hide"]}}',
       calories: '{"type":"calories","reply":"...","kcal":500,"confidence":"low|medium|high","foods":[{"name":"...","kcal":500}]}',
     };
+    const agentInstructions = mode === "calories" ? [] : [
+      "You are an in-app agent with access to ProFit's destinations and local exercise catalog. You can answer how-to questions, propose routines, propose a new exercise when the library lacks a suitable one or the user asks for one, change the dashboard card visibility/order, or navigate to a specific destination. Never claim that data has already changed. The user must choose an action button before anything is changed.",
+      "When returning a routine or new exercise proposal, explain it briefly without asking whether to edit, add, or create it: the interface already provides the confirmation and editing controls. Ask a follow-up only if essential information is missing.",
+      "For requests to open or go to a place in the app, return type navigate and choose the closest exact destination. Use the provided local IDs when opening a specific routine, exercise, or saved workout.",
+      "If a request is unrelated or unclear, return type chat and ask one short follow-up.",
+      `Available destinations (return the exact ID): ${JSON.stringify(assistantNavigationTargets)}. For a named exercise, routine, or saved workout, return target "exercise", "routine", or "workout" and its exact itemId from the local catalog. For requests to move, hide, or show dashboard cards, use type dashboard and keep all card IDs exactly as listed. The dashboard can be reordered and cards can be shown or hidden; ask which cards/order the user wants if unclear.`,
+    ];
+    const availableSchemas = mode === "calories"
+      ? schemas.calories
+      : Object.values(schemas).join(" ");
     return [
       "You are ProFit's fitness assistant. Be concise, practical, non-judgmental, and do not diagnose or give medical advice. Return exactly one valid JSON object and no markdown.",
       `Write every user-facing sentence in ${languageName}.`,
-      "You can answer app questions, suggest routines, estimate meal calories from the attached image, and suggest navigating to one of the app's three pages. Never claim to have changed data. Mutations and navigation are only suggestions; the app will ask the user to confirm.",
-      "If a request is unrelated or unclear, return type chat and ask one short follow-up.",
-      `Request mode: ${mode}. Available output schemas: ${Object.values(schemas).join(" ")}`,
+      ...agentInstructions,
+      `Request mode: ${mode}. Available output schemas: ${availableSchemas}`,
       mode === "routine"
-        ? `Create a safe, balanced routine based only on these allowed exercises. Use only IDs exactly as provided, never invent IDs. Keep it to 3-10 exercises, sets 1-8, repetitions 1-50 (or a short range), timed repetition values 5-600 seconds when an exercise is marked timed, targetMinutes 1-180 for activities without sets and repetitions, rest 0-300 seconds, comment at most 120 characters. Existing group names: ${JSON.stringify(routineGroups.slice(0, 20))}. New group is allowed if requested. Allowed exercises: ${JSON.stringify(candidates)}`
+        ? `Create a safe, balanced routine using only the allowed exercise IDs below; never invent an ID. If no suitable exercise exists, do not silently substitute a different movement: briefly say which movement is missing and ask whether the user wants a separate exercise proposed. Do not assign a group unless the user requested one. Keep routines to 3-10 exercises, sets 1-8, repetitions 1-50 (or a short range), timed values 5-600 seconds, activity targetMinutes 1-180 and rest 0-300 seconds. Existing group names: ${JSON.stringify(routineGroups.slice(0, 12))}. Allowed exercises: ${JSON.stringify(candidates)}`
+        : "",
+      mode !== "routine" && mode !== "calories"
+        ? `For new exercises, use type exercise only if explicitly requested or no listed movement matches the request. The UI will ask the user to review and confirm creation. Use exact canonical muscle and equipment values from these allowed options (they may be in Spanish even when the reply is in another language). Muscles: ${JSON.stringify(getExerciseMuscleFilters(exercises).slice(1))}. Equipment: ${JSON.stringify([...new Set(exercises.map((exercise) => exercise.equipment).filter(Boolean))])}. Allowed exercise matches: ${JSON.stringify(candidates)}. For dashboard layout requests, return the complete card ID order and hidden ID list based on the current configuration.`
         : "",
       imageIncluded
         ? "Estimate calories for the visible food and a typical portion. It is an uncertain estimate: state assumptions briefly, use a conservative single integer estimate, and never present it as exact. Do not infer ingredients that are not visible. Return type calories with foods and confidence."
         : "",
-      `Local summary (no personal measurements or identifying data): ${JSON.stringify(context)}`,
+      mode !== "calories"
+        ? `Local app context (private measurements and identity are excluded): ${JSON.stringify(context)}`
+        : "",
       `Recent conversation: ${JSON.stringify(history)}`,
       `User request: ${assistantPlainText(question, 1000)}`,
     ].filter(Boolean).join("\n\n");
@@ -7915,10 +8437,6 @@ function GeminiAssistantModal({
         exercises: entries.map((entry) => entry.id),
         exerciseSettings: Object.fromEntries(entries.map((entry) => [entry.id, entry.settings])),
       },
-      exerciseList: entries.map((entry) => ({
-        exercise: available.get(entry.id),
-        settings: entry.settings,
-      })),
     };
   };
 
@@ -7927,20 +8445,15 @@ function GeminiAssistantModal({
     const question = input.trim() || (photo ? translateText("Calcula las calorías aproximadas de esta comida.") : "");
     if (!question || loading || !assistantReady) return;
     const image = photo;
-    const mode = image
-      ? "calories"
-      : /\b(rutina|rutinas|rotina|routine|workout(?:\s+plan)?|training\s+plan|trainingsplan|programme d'entraînement|programa de entrenamiento|piano di allenamento)\b/i.test(question)
-        ? "routine"
-        : "agent";
+    const mode = assistantRequestMode(question, Boolean(image));
     const messageId = uid();
-    setMessages((current) => [...current, {
+    setUserMessage({
       id: messageId,
       role: "user",
       text: question,
       imagePreview: image?.dataUrl || "",
-    }]);
+    });
     setInput("");
-    if (messageInput.current) messageInput.current.style.height = "43px";
     setPhoto(null);
     setError("");
     setLoading(true);
@@ -7984,8 +8497,30 @@ function GeminiAssistantModal({
               : [],
           };
         }
-      } else if (decoded.type === "navigate" && ["home", "training", "profile"].includes(decoded.target)) {
-        assistantMessage.navigation = decoded.target;
+      } else if (decoded.type === "exercise") {
+        const draft = validateAssistantExercise(decoded.exercise, exercises);
+        if (draft) assistantMessage.exerciseDraft = draft;
+        else assistantMessage.text = translateText("No encontré una propuesta de ejercicio nueva y válida. Prueba a indicar el músculo, el material y cómo se realiza.");
+      } else if (decoded.type === "dashboard") {
+        const validIds = dashboardCards.map((card) => card.id);
+        const requestedOrder = Array.isArray(decoded.layout?.order)
+          ? decoded.layout.order.filter((id) => validIds.includes(id))
+          : [];
+        const currentOrder = dashboardLayout?.order || validIds;
+        const layoutOrder = [...new Set([...requestedOrder, ...currentOrder.filter((id) => validIds.includes(id))])];
+        const hidden = Array.isArray(decoded.layout?.hidden)
+          ? [...new Set(decoded.layout.hidden.filter((id) => validIds.includes(id)))]
+          : dashboardLayout?.hidden || [];
+        assistantMessage.dashboard = { order: layoutOrder, hidden };
+      } else if (decoded.type === "navigate") {
+        const target = String(decoded.target || "");
+        if (Object.hasOwn(assistantNavigationTargets, target)) assistantMessage.navigation = { target };
+        else if (target === "routine" && routines.some((routine) => routine.id === decoded.itemId))
+          assistantMessage.navigation = { target, itemId: decoded.itemId };
+        else if (target === "exercise" && exercises.some((exercise) => exercise.id === decoded.itemId))
+          assistantMessage.navigation = { target, itemId: decoded.itemId };
+        else if (target === "workout" && workouts.some((workout) => workout.id === decoded.itemId))
+          assistantMessage.navigation = { target, itemId: decoded.itemId };
       }
       setMessages((current) => [...current, assistantMessage]);
     } catch (failure) {
@@ -8004,8 +8539,16 @@ function GeminiAssistantModal({
     ));
   };
   const addSuggestedRoutine = (message) => {
+    const draft = {
+      ...message.routine,
+      exercises: message.routine.exercises.map((id) => ({
+        id,
+        ...(message.routine.exerciseSettings?.[id] || {}),
+      })),
+    };
+    const validated = validateRoutine(draft, message.text);
     onClose();
-    onSaveRoutine(message.routine);
+    if (validated) onSaveRoutine(validated.routine);
   };
   const registerCalories = (message) => {
     onAddKcal(message.calories.kcal);
@@ -8014,36 +8557,188 @@ function GeminiAssistantModal({
     ));
   };
   const openPage = (page) => {
-    onClose();
     onNavigate(page);
   };
 
+  const updateRoutineDraft = (messageId, update) => setMessages((current) =>
+    current.map((message) => message.id === messageId
+      ? { ...message, ...update }
+      : message),
+  );
+  const updateRoutineSettings = (message, exerciseId, key, value) => {
+    const settings = { ...(message.routine.exerciseSettings || {}) };
+    settings[exerciseId] = { ...(settings[exerciseId] || {}), [key]: value };
+    updateRoutineDraft(message.id, {
+      routine: { ...message.routine, exerciseSettings: settings },
+    });
+  };
+  const addExerciseToRoutineDraft = (message) => {
+    const exerciseId = message.addExerciseId;
+    const exercise = exercises.find((item) => item.id === exerciseId);
+    if (!exercise || message.routine.exercises.includes(exerciseId)) return;
+    const settings = { ...(message.routine.exerciseSettings || {}) };
+    if (exerciseTracksSets(exercise)) settings[exerciseId] = {
+      sets: assistantNumber(exercise.sets, 3, 1, 8),
+      reps: String(exercise.reps || 8),
+      restSeconds: assistantNumber(exercise.rest, 60, 0, 300),
+      comment: "",
+    };
+    else settings[exerciseId] = {
+      targetMinutes: assistantNumber(exercise.duration, 20, 1, 180),
+      comment: "",
+    };
+    updateRoutineDraft(message.id, {
+      routine: {
+        ...message.routine,
+        exercises: [...message.routine.exercises, exerciseId].slice(0, 20),
+        exerciseSettings: settings,
+      },
+      addExerciseId: "",
+    });
+  };
+  const removeExerciseFromRoutineDraft = (message, exerciseId) => {
+    const { [exerciseId]: _removed, ...settings } = message.routine.exerciseSettings || {};
+    updateRoutineDraft(message.id, {
+      routine: {
+        ...message.routine,
+        exercises: message.routine.exercises.filter((id) => id !== exerciseId),
+        exerciseSettings: settings,
+      },
+    });
+  };
+  const applyRoutineDraft = (message) => {
+    const group = message.routine.group === "__new_group__"
+      ? assistantPlainText(message.customGroupName, 40)
+      : message.routine.group;
+    const draft = {
+      ...message.routine,
+      group,
+      exercises: message.routine.exercises.map((id) => ({
+        id,
+        ...(message.routine.exerciseSettings?.[id] || {}),
+      })),
+    };
+    const validated = validateRoutine(draft, message.text);
+    if (!validated) {
+      setError(translateText("Añade al menos un ejercicio válido antes de guardar la rutina."));
+      return;
+    }
+    updateRoutineDraft(message.id, { editingRoutine: false });
+    onClose();
+    onSaveRoutine({
+      ...validated.routine,
+      group,
+      note: assistantPlainText(message.routine.note, 250),
+    });
+  };
+  const applyDashboardLayout = (message) => {
+    if (!message.dashboard) return;
+    onDashboardLayout(message.dashboard);
+    setMessages((current) => current.map((item) => item.id === message.id
+      ? { ...item, dashboardApplied: true }
+      : item));
+  };
+
   return (
+    <>
     <Modal
       title="ProFit AI"
+      headerActions={(
+        <div class="gemini-modal-actions">
+          <button type="button" class="gemini-modal-new-chat" title={translateText("Nuevo chat")} aria-label={translateText("Nuevo chat")} onClick={createChat}>
+            <Icon name="plus" size={17} />
+          </button>
+          <button type="button" class="gemini-chat-delete-current" title={translateText("Eliminar chat")} aria-label={translateText("Eliminar chat")} onClick={() => activeChat && requestDeleteChat(activeChat.id)} disabled={!activeChat}>
+            <Icon name="trash" size={15} />
+          </button>
+          <span class={`gemini-status gemini-status-${displayStatus}`}>
+            <i />{translateText(assistantStatusText)}
+          </span>
+        </div>
+      )}
       onClose={onClose}
       wide
       forceImmersive
       className="gemini-assistant-modal"
     >
-      <section class="gemini-assistant">
+      <section class={`gemini-assistant ${historyOpen ? "gemini-sidebar-open" : ""}`}>
+        {historyOpen && <button type="button" class="gemini-sidebar-shade" aria-label={translateText("Cerrar historial de chats")} onClick={() => setHistoryOpen(false)} />}
+        <aside class="gemini-sidebar" aria-label={translateText("Historial de chats")}>
+          <div class="gemini-sidebar-brand">
+            <span class="gemini-sidebar-mark"><Icon name="sparkles" size={17} /></span>
+            <strong>ProFit AI</strong>
+          </div>
+          <button type="button" class="gemini-new-chat" onClick={createChat}>
+            <Icon name="plus" size={17} />
+            <span>{translateText("Nuevo chat")}</span>
+          </button>
+          <div class="gemini-sidebar-section-head">
+            <div class="gemini-sidebar-section-label"><Icon name="history" size={14} />{translateText("Recientes")}</div>
+            <button type="button" class="gemini-delete-all-chats" title={translateText("Borrar todos los chats")} aria-label={translateText("Borrar todos los chats")} disabled={!chats.length} onClick={requestDeleteAllChats}>
+              <Icon name="trash" size={13} />{translateText("Borrar todos")}
+            </button>
+          </div>
+          <div class="gemini-sidebar-chats">
+            {recentChats.length ? recentChats.map((chat) => (
+              <div class={`gemini-sidebar-chat ${chat.id === activeChat?.id ? "active" : ""}`} key={chat.id}>
+                <button type="button" class="gemini-sidebar-chat-select" onClick={() => selectChat(chat.id)} title={assistantPlainText(chat.title, 100)}>
+                  <span>{assistantPlainText(chat.title, 56) || translateText("Nuevo chat")}</span>
+                  <small>{new Date(chat.updatedAt || chat.createdAt).toLocaleDateString(intlLocale(), { month: "short", day: "numeric" })}</small>
+                </button>
+              </div>
+            )) : <p class="gemini-chat-history-empty">{translateText("Tus chats recientes aparecerán aquí.")}</p>}
+          </div>
+        </aside>
+        <div class="gemini-assistant-main">
         <header class="gemini-assistant-heading">
+          <button type="button" class="gemini-sidebar-toggle" title={translateText("Historial de chats")} aria-label={translateText("Historial de chats")} aria-expanded={historyOpen} onClick={() => setHistoryOpen((value) => !value)}>
+            <Icon name="menu" size={18} />
+          </button>
           <span class="gemini-assistant-mark"><Icon name="sparkles" size={21} /></span>
-          <div>
-            <h2>{translateText("ProFit AI")}</h2>
+          <div class="gemini-assistant-title">
+            {editingChatId === activeChat?.id ? (
+              <div class="gemini-chat-title-edit">
+                <input
+                  autoFocus
+                  maxLength="70"
+                  value={editingChatTitle}
+                  aria-label={translateText("Título del chat")}
+                  onInput={(event) => setEditingChatTitle(event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      saveEditChatTitle(activeChat);
+                    } else if (event.key === "Escape") {
+                      cancelEditChatTitle();
+                    }
+                  }}
+                />
+                <button type="button" class="gemini-sidebar-chat-save" title={translateText("Guardar título")} aria-label={translateText("Guardar título")} disabled={!editingChatTitle.trim()} onClick={() => saveEditChatTitle(activeChat)}>
+                  <Icon name="check" size={15} />
+                </button>
+                <button type="button" class="gemini-sidebar-chat-cancel" title={translateText("Cancelar edición de título")} aria-label={translateText("Cancelar edición de título")} onClick={cancelEditChatTitle}>
+                  <Icon name="close" size={14} />
+                </button>
+              </div>
+            ) : (
+              <div class="gemini-chat-title-line">
+                <h2>{assistantPlainText(activeChat?.title || translateText("ProFit AI"), 50)}</h2>
+                {activeChat && (
+                  <button type="button" class="gemini-chat-title-rename" title={translateText("Cambiar título")} aria-label={translateText("Cambiar título")} onClick={() => beginEditChatTitle(activeChat)}>
+                    <Icon name="edit" size={14} />
+                  </button>
+                )}
+              </div>
+            )}
             <p>{translateText("Tu asistente para entrenar y registrar tu progreso.")}</p>
           </div>
-            <span class={`gemini-status gemini-status-${displayStatus}`}>
-            <i />{translateText(assistantStatusText)}
-          </span>
         </header>
         {useGeminiNano && ["module_missing", "downloadable"].includes(status) && (
           <div class="gemini-model-action">
             <span>{translateText("Gemini Nano necesita descargar el modelo en este dispositivo.")}</span>
-            <Button type="button" onClick={downloadModel} disabled={downloading}>
+            <button type="button" class="gemini-download-action" onClick={downloadModel} disabled={downloading} title={translateText(downloading ? "Descargando modelo…" : "Descargar modelo")} aria-label={translateText(downloading ? "Descargando modelo…" : "Descargar modelo")}>
               <Icon name="download" size={15} />
-              {downloading ? translateText("Descargando modelo…") : translateText("Descargar modelo")}
-            </Button>
+            </button>
           </div>
         )}
         {useGeminiNano && status === "unsupported" && (
@@ -8078,8 +8773,11 @@ function GeminiAssistantModal({
                 <button type="button" onClick={() => setInput(translateText("Crea una rutina de 3 días para todo el cuerpo."))}>
                   <Icon name="dumbbell" size={15} />{translateText("Crear rutina")}
                 </button>
-                <button type="button" onClick={() => imageInput.current?.click()}>
+                <button type="button" class="gemini-suggestion-media" onClick={() => imageInput.current?.click()}>
                   <Icon name="image" size={15} />{translateText("Estimar calorías con una foto")}
+                </button>
+                <button type="button" class="gemini-suggestion-media" onClick={() => cameraInput.current?.click()}>
+                  <Icon name="camera" size={15} />{translateText("Hacer foto")}
                 </button>
                 <button type="button" onClick={() => setInput(translateText("¿Qué puedo hacer en ProFit?"))}>
                   <Icon name="search" size={15} />{translateText("Consultar la app")}
@@ -8089,29 +8787,104 @@ function GeminiAssistantModal({
           )}
           {messages.map((message) => (
             <article class={`gemini-message gemini-message-${message.role}`} key={message.id}>
-              {message.imagePreview && <img class="gemini-message-photo" src={message.imagePreview} alt={translateText("Comida analizada")} />}
-              <p>{message.text}</p>
+              {message.imagePreview ? <img class="gemini-message-photo" src={message.imagePreview} alt={translateText("Comida analizada")} /> : message.photoAttached && <small class="gemini-photo-archived"><Icon name="image" size={13} />{translateText("Foto analizada; la imagen no se conserva en el historial")}</small>}
+                  <p>{message.text}</p>
               {message.routine && (
                 <div class="gemini-result-card">
                   <div class="gemini-result-heading">
-                    <div><small>{translateText("Rutina sugerida")}</small><strong>{message.routine.name}</strong></div>
-                    <span>{message.exerciseList.length} {translateText("ejercicios")}</span>
+                    <div><small>{translateText("Rutina sugerida")}</small>{message.editingRoutine ? <input class="gemini-routine-name" maxLength="60" value={message.routine.name} onInput={(event) => updateRoutineDraft(message.id, { routine: { ...message.routine, name: event.currentTarget.value } })} /> : <strong>{message.routine.name}</strong>}</div>
+                    <span>{message.routine.exercises.length} {translateText("ejercicios")}</span>
                   </div>
-                  {message.routine.group && <small class="gemini-result-group">{translateText("Grupo")}: {message.routine.group}</small>}
+                  {!message.editingRoutine && <small class="gemini-estimate-note">{translateText("¿Quieres revisar o ajustar la rutina antes de añadirla?")}</small>}
+                  {message.editingRoutine ? (
+                    <>
+                      <label class="gemini-routine-group-field">
+                        <span>{translateText("Grupo de rutinas")}</span>
+                        <select value={message.routine.group === "__new_group__" ? "__new_group__" : message.routine.group || ""} onChange={(event) => updateRoutineDraft(message.id, { routine: { ...message.routine, group: event.currentTarget.value } })}>
+                          <option value="">{translateText("Sin grupo")}</option>
+                          {mergeRoutineGroups(routineGroups, message.routine.group && message.routine.group !== "__new_group__" ? [message.routine.group] : []).map((group) => <option value={group} key={group}>{group}</option>)}
+                          <option value="__new_group__">{translateText("Crear grupo nuevo…")}</option>
+                        </select>
+                      </label>
+                      {message.routine.group === "__new_group__" && <input class="gemini-routine-new-group" maxLength="40" value={message.customGroupName || ""} placeholder={translateText("Nombre del grupo")} onInput={(event) => updateRoutineDraft(message.id, { customGroupName: event.currentTarget.value })} />}
+                      <label class="gemini-routine-note-field"><span>{translateText("Notas")}</span><textarea rows="2" maxLength="250" value={message.routine.note || ""} onInput={(event) => updateRoutineDraft(message.id, { routine: { ...message.routine, note: event.currentTarget.value } })} /></label>
+                    </>
+                  ) : message.routine.group ? <small class="gemini-result-group">{translateText("Grupo")}: {message.routine.group}</small> : null}
                   <div class="gemini-routine-preview">
-                    {message.exerciseList.map(({ exercise, settings }) => (
-                      <div class="gemini-routine-row" key={exercise.id}>
-                        <span>{translateText(exercise.name)}</span>
-                        <small>
-                          {settings.sets ? `${settings.sets} × ${settings.reps || "—"}` : settings.targetMinutes ? `${settings.targetMinutes} min` : translateText("Actividad")}
-                          {settings.restSeconds !== undefined ? ` · ${settings.restSeconds}s` : ""}
-                        </small>
-                      </div>
-                    ))}
+                    {message.routine.exercises.map((id) => {
+                      const exercise = exercises.find((item) => item.id === id);
+                      if (!exercise) return null;
+                      const settings = message.routine.exerciseSettings?.[id] || {};
+                      return (
+                        <div class={`gemini-routine-row ${message.editingRoutine ? "is-editing" : ""}`} key={id}>
+                          <span class="gemini-routine-exercise-name" title={translateText(exercise.name)}>{translateText(exercise.name)}</span>
+                          {message.editingRoutine ? (
+                            <div class="gemini-routine-row-fields">
+                              {exerciseTracksSets(exercise) && <label><small>{translateText("Series")}</small><input type="number" min="1" max="8" step="1" value={settings.sets ?? exercise.sets ?? 3} onInput={(event) => updateRoutineSettings(message, id, "sets", event.currentTarget.value)} /></label>}
+                              {exerciseTracksReps(exercise) && <label><small>{translateText("Repeticiones")}</small><input maxLength="14" value={settings.reps ?? exercise.reps ?? "8–12"} onInput={(event) => updateRoutineSettings(message, id, "reps", event.currentTarget.value)} /></label>}
+                              {!exerciseTracksSets(exercise) && !exerciseTracksReps(exercise) && <label><small>{translateText("Duración objetivo (min)")}</small><input type="number" min="1" max="180" value={settings.targetMinutes ?? exercise.duration ?? 20} onInput={(event) => updateRoutineSettings(message, id, "targetMinutes", event.currentTarget.value)} /></label>}
+                              {exerciseTracksSets(exercise) && <label><small>{translateText("Descanso (s)")}</small><input type="number" min="0" max="300" value={settings.restSeconds ?? exercise.rest ?? 60} onInput={(event) => updateRoutineSettings(message, id, "restSeconds", event.currentTarget.value)} /></label>}
+                              <label class="gemini-routine-comment"><small>{translateText("Comentario (opcional)")}</small><textarea rows="2" maxLength="120" value={settings.comment || ""} onInput={(event) => updateRoutineSettings(message, id, "comment", event.currentTarget.value)} /></label>
+                              <button type="button" class="icon-button danger" title={translateText("Quitar ejercicio")} aria-label={translateText("Quitar ejercicio")} onClick={() => removeExerciseFromRoutineDraft(message, id)}><Icon name="trash" size={14} /></button>
+                            </div>
+                          ) : (
+                            <small class="gemini-routine-row-summary">
+                              {settings.sets ? `${settings.sets} × ${settings.reps || "—"}` : settings.targetMinutes ? `${settings.targetMinutes} min` : translateText("Actividad")}
+                              {settings.restSeconds !== undefined ? ` · ${settings.restSeconds}s` : ""}
+                            </small>
+                          )}
+                          {!message.editingRoutine && settings.comment && (
+                            <small class="gemini-routine-row-comment" title={settings.comment}>
+                              {settings.comment}
+                            </small>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <Button type="button" onClick={() => addSuggestedRoutine(message)}>
-                    <Icon name="plus" size={15} />{translateText("Añadir rutina")}
-                  </Button>
+                  {message.editingRoutine ? (
+                    <>
+                      <div class="gemini-routine-add-row">
+                        <select value={message.addExerciseId || ""} onChange={(event) => updateRoutineDraft(message.id, { addExerciseId: event.currentTarget.value })}>
+                          <option value="">{translateText("Añadir ejercicio…")}</option>
+                          {exercises.filter((exercise) => !message.routine.exercises.includes(exercise.id)).map((exercise) => <option value={exercise.id} key={exercise.id}>{translateText(exercise.name)}</option>)}
+                        </select>
+                        <button type="button" class="icon-button" title={translateText("Añadir ejercicio")} aria-label={translateText("Añadir ejercicio")} disabled={!message.addExerciseId} onClick={() => addExerciseToRoutineDraft(message)}><Icon name="plus" size={16} /></button>
+                      </div>
+                      <div class="gemini-routine-actions">
+                        <Button type="button" onClick={() => applyRoutineDraft(message)}><Icon name="check" size={15} />{translateText("Añadir rutina")}</Button>
+                        <Button type="button" variant="quiet" onClick={() => updateRoutineDraft(message.id, { editingRoutine: false })}>{translateText("Volver")}</Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div class="gemini-routine-actions">
+                      <Button type="button" variant="quiet" onClick={() => updateRoutineDraft(message.id, { editingRoutine: true })}><Icon name="edit" size={15} />{translateText("Editar antes de añadir")}</Button>
+                      <Button type="button" onClick={() => addSuggestedRoutine(message)}><Icon name="plus" size={15} />{translateText("Añadir tal cual")}</Button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {message.exerciseDraft && (
+                <div class="gemini-result-card gemini-exercise-result">
+                  <div class="gemini-result-heading"><div><small>{translateText("Ejercicio nuevo sugerido")}</small><strong>{message.exerciseDraft.name}</strong></div><span>{translateText("Revisar")}</span></div>
+                  <div class="gemini-exercise-summary"><span>{translateText(message.exerciseDraft.muscle)}</span><span>{translateText(message.exerciseDraft.equipment)}</span>{message.exerciseDraft.secondary.map((muscle) => <span key={muscle}>{translateText(muscle)}</span>)}</div>
+                  <small class="gemini-estimate-note">{translateText("¿Quieres crear este ejercicio? Se abrirá el editor para que revises los datos y añadas una foto o demostración si lo necesitas.")}</small>
+                  <div class="gemini-routine-actions">
+                    <Button type="button" onClick={() => { const draft = { ...message.exerciseDraft }; onClose(); onCreateExercise(draft); }}><Icon name="edit" size={15} />{translateText("Revisar y crear")}</Button>
+                    <Button type="button" variant="quiet" onClick={() => setMessages((current) => current.map((item) => item.id === message.id ? { ...item, exerciseDraft: null } : item))}>{translateText("Ahora no")}</Button>
+                  </div>
+                </div>
+              )}
+              {message.dashboard && (
+                <div class="gemini-result-card gemini-dashboard-result">
+                  <div class="gemini-result-heading"><div><small>{translateText("Vista previa del inicio")}</small><strong>{translateText("Tarjetas del inicio")}</strong></div></div>
+                  <div class="gemini-dashboard-preview">
+                    {message.dashboard.order.map((id, index) => {
+                      const card = dashboardCards.find((item) => item.id === id);
+                      return card ? <div class={message.dashboard.hidden.includes(id) ? "is-hidden" : ""} key={id}><span>{index + 1}</span><strong>{translateText(card.label)}</strong><small>{message.dashboard.hidden.includes(id) ? translateText("Oculta") : translateText("Visible")}</small></div> : null;
+                    })}
+                  </div>
+                  <Button type="button" disabled={message.dashboardApplied} onClick={() => applyDashboardLayout(message)}><Icon name={message.dashboardApplied ? "check" : "check"} size={15} />{translateText(message.dashboardApplied ? "Cambios aplicados" : "Aplicar cambios al inicio")}</Button>
                 </div>
               )}
               {message.calories && (
@@ -8131,7 +8904,7 @@ function GeminiAssistantModal({
               {message.navigation && (
                 <Button type="button" variant="quiet" onClick={() => openPage(message.navigation)}>
                   <Icon name="arrow" size={15} />
-                  {translateText("Abrir sección")}: {translateText({ home: "Inicio", training: "Entrenamientos", profile: "Perfil" }[message.navigation])}
+                  {translateText("Abrir sección")}: {message.navigation.target === "routine" ? routines.find((routine) => routine.id === message.navigation.itemId)?.name : message.navigation.target === "exercise" ? translateText(exercises.find((exercise) => exercise.id === message.navigation.itemId)?.name || "Ejercicio") : message.navigation.target === "workout" ? workouts.find((workout) => workout.id === message.navigation.itemId)?.name : translateText(assistantNavigationTargets[message.navigation.target] || "Perfil")}
                 </Button>
               )}
             </article>
@@ -8149,16 +8922,55 @@ function GeminiAssistantModal({
           {error && <div class="gemini-error" role="status">{error}</div>}
           <form class="gemini-composer" onSubmit={send}>
             <input ref={imageInput} type="file" accept="image/*" hidden onChange={(event) => { void choosePhoto(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
-            <button type="button" class="icon-button gemini-attach" onClick={() => imageInput.current?.click()} disabled={!assistantReady || loading} aria-label={translateText("Añadir foto de comida")}><Icon name="image" size={19} /></button>
-            <textarea ref={messageInput} value={input} onInput={(event) => { const field = event.currentTarget; setInput(field.value); field.style.height = "auto"; field.style.height = `${Math.min(field.scrollHeight, 120)}px`; }} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(event); } }} enterKeyHint="send" placeholder={translateText("Pregunta algo o describe la rutina que buscas…")} rows="1" disabled={!assistantReady || loading} />
+            <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(event) => { void choosePhoto(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
+            <button type="button" class="icon-button gemini-attach gemini-gallery-attach" onClick={() => imageInput.current?.click()} disabled={!assistantReady || loading} aria-label={translateText("Añadir foto de comida")}><Icon name="image" size={19} /></button>
+            <button type="button" class="icon-button gemini-attach gemini-camera-attach" onClick={() => cameraInput.current?.click()} disabled={!assistantReady || loading} aria-label={translateText("Hacer foto")} title={translateText("Hacer foto")}><Icon name="camera" size={18} /></button>
+            <textarea ref={messageInput} value={input} onInput={(event) => setInput(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); void send(event); } }} enterKeyHint="enter" placeholder={translateText("Pregunta algo o describe la rutina que buscas…")} rows="1" disabled={!assistantReady || loading} />
             <Button type="submit" disabled={!assistantReady || loading || (!input.trim() && !photo)} aria-label={translateText("Enviar")}><Icon name="arrow" size={17} /></Button>
           </form>
           <small class="gemini-privacy-note"><Icon name="lock" size={12} />{translateText(useGeminiNano
             ? "Gemini Nano procesa la consulta y la foto en este dispositivo; no se envían a Google."
             : "El modo API envía a Google Gemini tu consulta, la imagen y el contexto de entrenamiento.")}</small>
         </div>
+        </div>
       </section>
     </Modal>
+    {deleteChatId && (
+      <Modal
+        title={translateText("Eliminar chat")}
+        onClose={() => setDeleteChatId("")}
+        className="confirmation-layer gemini-chat-delete-modal"
+      >
+        <div class="gemini-delete-chat-content">
+          <span class="gemini-delete-chat-icon"><Icon name="trash" size={19} /></span>
+          <h2>{translateText("Eliminar chat")}</h2>
+          <strong>{assistantPlainText(deletingChat?.title, 70) || translateText("Nuevo chat")}</strong>
+          <p>{translateText("¿Eliminar este chat? No se podrá recuperar.")}</p>
+          <div class="gemini-delete-chat-actions">
+            <Button type="button" variant="quiet" onClick={() => setDeleteChatId("")}>{translateText("Cancelar")}</Button>
+            <Button type="button" variant="danger" onClick={() => confirmDeleteChat(deleteChatId)}>{translateText("Eliminar")}</Button>
+          </div>
+        </div>
+      </Modal>
+    )}
+    {deleteAllChatsOpen && (
+      <Modal
+        title={translateText("Borrar todos los chats")}
+        onClose={() => setDeleteAllChatsOpen(false)}
+        className="confirmation-layer gemini-chat-delete-modal"
+      >
+        <div class="gemini-delete-chat-content">
+          <span class="gemini-delete-chat-icon"><Icon name="trash" size={19} /></span>
+          <h2>{translateText("Borrar todos los chats")}</h2>
+          <p>{translateText("Se eliminarán todos los chats y sus mensajes. No se podrán recuperar.")}</p>
+          <div class="gemini-delete-chat-actions">
+            <Button type="button" variant="quiet" onClick={() => setDeleteAllChatsOpen(false)}>{translateText("Cancelar")}</Button>
+            <Button type="button" variant="danger" onClick={confirmDeleteAllChats}>{translateText("Borrar todo")}</Button>
+          </div>
+        </div>
+      </Modal>
+    )}
+    </>
   );
 }
 
@@ -9397,7 +10209,7 @@ function RoutineGroupForm({ groups, onClose, onSave }) {
   );
 }
 
-function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
+function ExerciseForm({ exercise, exercises = [], onClose, onSave, onDeleteCustomMuscle }) {
   const [form, setForm] = useState(() =>
     exercise
       ? normalizeExerciseData(exercise)
@@ -9433,7 +10245,9 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
     ? form.cues.map(translateText).join("\n")
     : form.cues;
   const fileInput = useRef(null);
+  const cameraInput = useRef(null);
   const previewInput = useRef(null);
+  const previewCameraInput = useRef(null);
   const [mediaFile, setMediaFile] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [removeMedia, setRemoveMedia] = useState(false);
@@ -9506,6 +10320,21 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
     setManualPreview(true);
     setRemovePreview(false);
   };
+  const removeDemoMedia = () => {
+    setMediaFile(null);
+    setRemoveMedia(true);
+    setFileError("");
+    if (!manualPreview) {
+      setPreviewFile(null);
+      setRemovePreview(true);
+    }
+  };
+  const removePreviewImage = () => {
+    setPreviewFile(null);
+    setManualPreview(false);
+    setRemovePreview(true);
+    setFileError("");
+  };
   const onSubmit = (event) => {
     event.preventDefault();
     const cues = Array.isArray(form.cues)
@@ -9542,6 +10371,14 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
     media: mediaFile ? localMediaUrl : removeMedia ? "" : form.media,
     poster: localPreviewUrl || (removePreview || mediaFile ? "" : form.poster),
   };
+  const showDemoMedia = Boolean(mediaFile || (!removeMedia && hasExerciseDemoMedia(previewExercise)));
+  const showPreviewImage = Boolean(
+    previewFile || ((form.previewAssetId || form.poster) && !removePreview),
+  );
+  const primaryMuscleOptions = [...new Set([
+    ...getExerciseMuscleFilters(exercises).slice(1),
+    form.muscle,
+  ].filter(Boolean))].sort((a, b) => a.localeCompare(b, intlLocale(), { sensitivity: "base" }));
   return (
     <Modal title="Guardar ejercicio" onClose={onClose}>
       <form class="exercise-form" onSubmit={onSubmit}>
@@ -9566,22 +10403,21 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
           />
         )}
         <div class="exercise-media-editor">
-          <div class="exercise-media-editor-head">
-            <div>
-              <strong>Vídeo o foto de demostración</strong>
-              <span>
-                El vídeo conserva una portada automática. Puedes elegir otra
-                abajo.
-              </span>
+          <section class="exercise-media-slot">
+            <div class="exercise-media-slot-head">
+              <div class="exercise-media-slot-title">
+                <strong>{translateText("Vídeo o foto de demostración")}</strong>
+                <span>{translateText("Vídeo o imagen")}</span>
+              </div>
+              <div class="exercise-media-source-actions">
+                <button type="button" class="exercise-media-action" title={translateText("Hacer foto")} aria-label={translateText("Hacer foto")} onClick={() => cameraInput.current?.click()}>
+                  <Icon name="camera" size={17} />
+                </button>
+                <button type="button" class="exercise-media-action" title={translateText("Elegir foto o vídeo del ejercicio")} aria-label={translateText("Elegir foto o vídeo del ejercicio")} onClick={() => fileInput.current?.click()}>
+                  <Icon name="upload" size={17} />
+                </button>
+              </div>
             </div>
-            <Button
-              variant="quiet"
-              type="button"
-              onClick={() => fileInput.current?.click()}
-            >
-              <Icon name="upload" size={14} /> Elegir
-            </Button>
-          </div>
           <input
             ref={fileInput}
             class="visually-hidden"
@@ -9594,25 +10430,58 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
               chooseDemoMedia(file);
             }}
           />
-          {(mediaFile || hasExerciseDemoMedia(previewExercise)) && (
-            <div
-              class={`exercise-media-editor-preview ${mediaFile?.type.startsWith("video/") || isExerciseDemoVideo(previewExercise) ? "exercise-media-editor-preview-video" : ""}`}
-            >
-              {mediaFile ? (
+          <input
+            ref={cameraInput}
+            class="visually-hidden"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            aria-label={translateText("Hacer foto")}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              chooseDemoMedia(file);
+            }}
+          />
+          <div
+            class={`exercise-media-editor-preview ${mediaFile?.type.startsWith("video/") || (!removeMedia && isExerciseDemoVideo(previewExercise)) ? "exercise-media-editor-preview-video" : ""} ${showDemoMedia ? "" : "is-empty"}`}
+          >
+            {mediaFile ? (
                 mediaFile.type.startsWith("video/") ? (
                   <video src={localMediaUrl} muted autoPlay loop playsInline />
                 ) : (
                   <img src={localMediaUrl} alt="Foto de demostración" />
                 )
-              ) : (
+            ) : showDemoMedia ? (
                 <ExerciseThumb exercise={previewExercise} large animate />
-              )}
-            </div>
-          )}
-          <div class="exercise-preview-upload">
-            <div>
-              <strong>Imagen de vista previa</strong>
-              <small>En vídeos se genera una portada automáticamente.</small>
+            ) : (
+              <div class="exercise-media-empty-state">
+                <span class="exercise-media-empty-icon"><Icon name="image" size={21} /><i><Icon name="play" size={9} /></i></span>
+                <strong>{translateText("Sin demostración todavía")}</strong>
+                <span>{translateText("Añade una foto o un vídeo para mostrar cómo se realiza este ejercicio.")}</span>
+              </div>
+            )}
+            {showDemoMedia && (
+              <button type="button" class="exercise-media-remove-fab" title={translateText("Quitar demostración")} aria-label={translateText("Quitar demostración")} onClick={removeDemoMedia}>
+                <Icon name="close" size={16} />
+              </button>
+            )}
+          </div>
+          </section>
+          <section class="exercise-media-slot exercise-media-slot-preview">
+            <div class="exercise-media-slot-head">
+              <div class="exercise-media-slot-title">
+                <strong>{translateText("Imagen de vista previa")}</strong>
+                <span>{translateText("Solo imágenes")}</span>
+              </div>
+              <div class="exercise-media-source-actions">
+                <button type="button" class="exercise-media-action" title={translateText("Hacer foto")} aria-label={translateText("Hacer foto")} onClick={() => previewCameraInput.current?.click()}>
+                  <Icon name="camera" size={17} />
+                </button>
+                <button type="button" class="exercise-media-action" title={translateText("Elegir imagen de vista previa")} aria-label={translateText("Elegir imagen de vista previa")} onClick={() => previewInput.current?.click()}>
+                  <Icon name="upload" size={17} />
+                </button>
+              </div>
             </div>
             <input
               ref={previewInput}
@@ -9626,57 +10495,40 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
                 choosePreview(file);
               }}
             />
-            <Button
-              variant="quiet"
-              type="button"
-              className="exercise-preview-choose"
-              title={translateText("Elegir imagen de vista previa")}
-              aria-label={translateText("Elegir imagen de vista previa")}
-              onClick={() => previewInput.current?.click()}
-            >
-              <Icon name="upload" size={14} /> Elegir
-            </Button>
-          </div>
-          {(previewFile || ((form.previewAssetId || form.poster) && !removePreview)) && (
-            <div class="exercise-preview-thumb">
-              {previewFile ? (
-                <img src={localPreviewUrl} alt="Imagen de vista previa" />
+            <input
+              ref={previewCameraInput}
+              class="visually-hidden"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              aria-label={translateText("Hacer foto")}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = "";
+                choosePreview(file);
+              }}
+            />
+            <div class={`exercise-preview-editor-frame ${showPreviewImage ? "has-image" : "is-empty"}`}>
+              {showPreviewImage ? (
+                previewFile ? (
+                  <img src={localPreviewUrl} alt={translateText("Imagen de vista previa")} />
+                ) : (
+                  <ExerciseThumb exercise={previewExercise} large />
+                )
               ) : (
-                <ExerciseThumb exercise={previewExercise} />
+                <div class="exercise-preview-empty-state">
+                  <Icon name="image" size={19} />
+                  <span>{translateText("Sin imagen de vista previa")}</span>
+                </div>
+              )}
+              {showPreviewImage && (
+                <button type="button" class="exercise-preview-remove-fab" title={translateText("Quitar imagen de vista previa")} aria-label={translateText("Quitar imagen de vista previa")} onClick={removePreviewImage}>
+                  <Icon name="close" size={15} />
+                </button>
               )}
             </div>
-          )}
+          </section>
           {fileError && <span class="exercise-media-error">{fileError}</span>}
-          {(mediaFile || form.mediaAssetId) && (
-            <button
-              type="button"
-              class="text-button exercise-media-remove"
-              onClick={() => {
-                setMediaFile(null);
-                setRemoveMedia(true);
-                setFileError("");
-              }}
-            >
-              Quitar demostración
-            </button>
-          )}
-          {(previewFile || form.previewAssetId) && (
-            <button
-              type="button"
-              class="text-button exercise-media-remove"
-              onClick={() => {
-                setPreviewFile(null);
-                setManualPreview(false);
-                setRemovePreview(true);
-                if (mediaFile?.type.startsWith("video/"))
-                  setFileError(
-                    "Puedes elegir una portada o volver a seleccionar el vídeo para generarla automáticamente.",
-                  );
-              }}
-            >
-              Quitar imagen de vista previa
-            </button>
-          )}
         </div>
         <div class="form-row">
           <label>
@@ -9685,21 +10537,7 @@ function ExerciseForm({ exercise, onClose, onSave, onDeleteCustomMuscle }) {
               value={form.muscle}
               onChange={(e) => change("muscle", e.currentTarget.value)}
             >
-              {[
-                "Pecho",
-                "Espalda",
-                "Piernas",
-                "Glúteos",
-                "Hombros",
-                "Bíceps",
-                "Tríceps",
-                "Antebrazo",
-                "Abdominales",
-                "Isquiotibiales",
-                "Cuádriceps",
-                "Pantorrillas",
-                "Cuello",
-              ].map((name) => (
+              {primaryMuscleOptions.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
@@ -12931,9 +13769,11 @@ function App() {
   const incomingImportHandler = useRef(null);
   const nativeImportProcessing = useRef(false);
   const nativeImportQueued = useRef(false);
+  const activeFileOperations = useRef(0);
   const [, setLocaleRevision] = useState(0);
   const [tab, setTabState] = useState("home");
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [aiChats, setAiChats] = useState(loadAssistantChats);
   const [aiEnabled, setAiEnabled] = useState(() =>
     Boolean(loadJson("profit-ai-enabled", true)),
   );
@@ -12949,6 +13789,7 @@ function App() {
   const [pageTransition, setPageTransition] = useState(null);
   const [dashboardLayout, setDashboardLayout] = useState(loadDashboardLayout);
   const [dashboardLayoutOpen, setDashboardLayoutOpen] = useState(false);
+  const [trainingSectionRequest, setTrainingSectionRequest] = useState(null);
   const [calendarDay, setCalendarDay] = useState(() => dateKey(today()));
   const [weekStartsOn, setWeekStartsOn] = useState(() =>
     normalizeWeekStartsOn(loadJson("profit-week-start", 1)),
@@ -13268,9 +14109,29 @@ function App() {
   const [nativeNotificationAvailable, setNativeNotificationAvailable] =
     useState(false);
   const [toast, setToastState] = useState("");
+  const [fileProcessingLabel, setFileProcessingLabel] = useState("");
   const setToast = (message) => {
     if (isWarningMessage(message)) playWarningSound();
     setToastState(message);
+  };
+  const beginFileProcessing = (label) => {
+    activeFileOperations.current += 1;
+    setFileProcessingLabel(label);
+    let finished = false;
+    return () => {
+      if (finished) return;
+      finished = true;
+      activeFileOperations.current = Math.max(0, activeFileOperations.current - 1);
+      if (!activeFileOperations.current) setFileProcessingLabel("");
+    };
+  };
+  const withFileProcessing = async (label, operation) => {
+    const finish = beginFileProcessing(label);
+    try {
+      return await operation();
+    } finally {
+      finish();
+    }
   };
   const openWeighInModal = () => {
     setTab("profile");
@@ -13520,6 +14381,9 @@ function App() {
       JSON.stringify(dashboardLayout),
     );
   }, [dashboardLayout]);
+  useEffect(() => {
+    localStorage.setItem("profit-ai-chats", JSON.stringify(cleanAssistantChats(aiChats)));
+  }, [aiChats]);
   useEffect(() => {
     localStorage.setItem("profit-workouts", JSON.stringify(workouts));
   }, [workouts]);
@@ -14894,6 +15758,7 @@ function App() {
     return fields;
   };
   const handleImportFile = async (file, expectedKind) => {
+    const finishFileProcessing = beginFileProcessing("Importando archivo…");
     let missingProgressPhotos = 0;
     try {
       const envelope = normalizeImportedEnvelope(await decodeImportFile(file));
@@ -15006,6 +15871,11 @@ function App() {
               data.workouts.map(normalizeWorkoutExercises),
             ).sort((a, b) => b.date.localeCompare(a.date)),
           );
+        if (Array.isArray(data.aiChats))
+          setAiChats((current) => cleanAssistantChats(mergeById(
+            current,
+            cleanAssistantChats(data.aiChats),
+          )));
         if (Array.isArray(data.measures)) {
           const legacyBirthDate = [...data.measures]
             .sort((a, b) =>
@@ -15220,6 +16090,8 @@ function App() {
       console.error("Error importing ProFit data", error);
       setToast(error?.message || "No se pudo importar el archivo");
       return false;
+    } finally {
+      finishFileProcessing();
     }
   };
   incomingImportHandler.current = async (file) => {
@@ -15250,6 +16122,7 @@ function App() {
         return;
       }
       nativeImportProcessing.current = true;
+      const finishFileProcessing = beginFileProcessing("Importando archivo…");
       let fileId = "";
       try {
         let info = null;
@@ -15302,6 +16175,7 @@ function App() {
           }
         }
         nativeImportProcessing.current = false;
+        finishFileProcessing();
         if (active && nativeImportQueued.current) {
           nativeImportQueued.current = false;
           void processPendingImport();
@@ -15406,6 +16280,7 @@ function App() {
         measures: packagedMeasures,
         waterByDay,
         kcalByDay,
+        aiChats: cleanAssistantChats(aiChats),
         exportedAt: new Date().toISOString(),
       };
       const backupSlug = translateText("Copia de seguridad")
@@ -15432,6 +16307,94 @@ function App() {
       console.error("Error exporting ProFit backup", error);
       setToast(error?.message || "No se pudo exportar la copia");
     }
+  };
+
+  const navigateAssistant = (destination) => {
+    const target = typeof destination === "string" ? destination : destination?.target;
+    const itemId = destination?.itemId;
+    setAssistantOpen(false);
+    if (target === "routine") {
+      const routine = routines.find((item) => item.id === itemId);
+      if (routine) {
+        setTab("training");
+        setSelectedRoutine(routine);
+      }
+      return;
+    }
+    if (target === "exercise") {
+      const exercise = exercises.find((item) => item.id === itemId);
+      if (exercise) {
+        setTab("training");
+        setSelectedExercise(exercise);
+      }
+      return;
+    }
+    if (target === "workout") {
+      const workout = workouts.find((item) => item.id === itemId);
+      if (workout) {
+        setTab("profile");
+        setSelectedWorkout(workout);
+      }
+      return;
+    }
+    if (target === "home.startWorkout" || target === "training.startWorkout") {
+      setTab(target.startsWith("home") ? "home" : "training");
+      if (!activeSession) setWorkoutChooserOpen(true);
+      return;
+    }
+    if (target === "training.session") {
+      setTab("training");
+      if (!activeSession) setWorkoutChooserOpen(true);
+      return;
+    }
+    const page = target.startsWith("home")
+      ? "home"
+      : target.startsWith("training")
+        ? "training"
+        : "profile";
+    setTab(page);
+    if (target === "training.routines" || target === "training.createRoutine")
+      setTrainingSectionRequest({ section: "routines", nonce: uid() });
+    if (target === "training.library" || target === "training.createExercise")
+      setTrainingSectionRequest({ section: "library", nonce: uid() });
+    if (target === "training.createRoutine") {
+      setFormRoutineGroup(undefined);
+      setFormRoutine(null);
+    }
+    if (target === "training.createExercise") setFormExercise(null);
+    if (target === "home.cards") setDashboardLayoutOpen(true);
+    if (target === "profile.measurements") setMeasureHistoryOpen(true);
+    if (target === "profile.addWeighIn") {
+      setEditingMeasure(null);
+      setMeasureOpen(true);
+    }
+    if (target === "profile.photos") setMeasurePhotosOpen(true);
+    if (target === "profile.progress") setMeasureHistoryOpen(true);
+    if (target === "profile.deleteWorkouts") setDeleteWorkoutsOpen(true);
+
+    const scrollTargets = {
+      "home.milestone": "home-milestone",
+      "home.weekly": "home-weekly",
+      "home.muscles": "home-muscles",
+      "home.hydration": "home-hydration",
+      "home.calories": "home-calories",
+      "home.activity": "home-activity",
+      "profile.calendar": "profile-calendar",
+      "profile.consistency": "profile-consistency",
+      "profile.body": "profile-body",
+      "profile.muscles": "profile-muscles",
+      "profile.records": "profile-records",
+      "profile.deleteWorkouts": "profile-delete-workouts",
+      "profile.settings": "profile-settings",
+      "profile.aiSettings": "profile-ai-settings",
+      "profile.reminders": "profile-reminders",
+      "profile.dailyGoals": "profile-daily-goals",
+      "profile.data": "profile-data",
+    };
+    const scrollId = scrollTargets[target];
+    if (scrollId) window.setTimeout(() => {
+      document.getElementById(scrollId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
   };
 
   const content =
@@ -15483,12 +16446,13 @@ function App() {
           setFormRoutineGroup(undefined);
           setFormRoutine(routine);
         }}
-        onShareRoutine={shareRoutine}
-        onShareRoutineGroup={shareRoutineGroup}
+        onShareRoutine={(routine, target) => withFileProcessing("Exportando archivo…", () => shareRoutine(routine, target))}
+        onShareRoutineGroup={(group, target) => withFileProcessing("Exportando archivo…", () => shareRoutineGroup(group, target))}
         onDeleteRoutine={deleteRoutine}
         onDeleteRoutineGroup={deleteRoutineGroup}
         onStartRoutine={startRoutine}
         onImportFile={handleImportFile}
+        requestedSection={trainingSectionRequest}
       />
     ) : (
       <ProfilePage
@@ -15513,7 +16477,7 @@ function App() {
         onDeleteWorkouts={() => setDeleteWorkoutsOpen(true)}
         onWorkoutOpen={setSelectedWorkout}
         onImportFile={handleImportFile}
-        onExportData={exportBackup}
+        onExportData={(target) => withFileProcessing("Exportando archivo…", () => exportBackup(target))}
         unit={unit}
         onUnit={setUnit}
         heightUnit={heightUnit}
@@ -15663,6 +16627,10 @@ function App() {
           routines={routines}
           routineGroups={routineGroups}
           workouts={workouts}
+          dashboardLayout={dashboardLayout}
+          onDashboardLayout={setDashboardLayout}
+          chats={aiChats}
+          onChats={setAiChats}
           todayKcal={todayKcal}
           kcalGoal={effectiveKcalGoal}
           language={resolvedLanguage}
@@ -15670,8 +16638,13 @@ function App() {
           geminiApiKey={geminiApiKey}
           onClose={() => setAssistantOpen(false)}
           onSaveRoutine={saveRoutine}
+          onCreateExercise={(draft) => {
+            setTab("training");
+            setTrainingSectionRequest({ section: "library", nonce: uid() });
+            setFormExercise(draft);
+          }}
           onAddKcal={addKcal}
-          onNavigate={setTab}
+          onNavigate={navigateAssistant}
         />
       )}
       {dashboardLayoutOpen && (
@@ -15692,7 +16665,7 @@ function App() {
             setFormExercise(exercise);
           }}
           onDelete={deleteExercise}
-          onShare={shareExercise}
+          onShare={(exercise, target) => withFileProcessing("Exportando archivo…", () => shareExercise(exercise, target))}
           onRestoreOriginal={restoreBundledExerciseName}
         />
       )}
@@ -15702,7 +16675,7 @@ function App() {
           exercises={exercises}
           unit={unit}
           onClose={() => setSelectedWorkout(null)}
-          onShare={(target) => shareWorkout(selectedWorkout, target)}
+          onShare={(target) => withFileProcessing("Exportando archivo…", () => shareWorkout(selectedWorkout, target))}
           onEdit={() => setEditingWorkout(selectedWorkout)}
         />
       )}
@@ -15754,6 +16727,7 @@ function App() {
       {formExercise !== undefined && (
         <ExerciseForm
           exercise={formExercise || undefined}
+          exercises={exercises}
           onClose={() => setFormExercise(undefined)}
           onSave={saveExercise}
           onDeleteCustomMuscle={deleteSecondaryMuscle}
@@ -15928,6 +16902,14 @@ function App() {
             <Icon name="check" size={15} />
           </span>
           {toast}
+        </div>
+      )}
+      {fileProcessingLabel && (
+        <div class="file-processing-overlay" role="status" aria-live="polite" aria-busy="true">
+          <div class="file-processing-indicator">
+            <span class="file-processing-spinner" aria-hidden="true" />
+            <strong>{translateText(fileProcessingLabel)}</strong>
+          </div>
         </div>
       )}
     </div>
