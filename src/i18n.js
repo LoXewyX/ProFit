@@ -449,6 +449,10 @@ const trackingOptionTranslations = {
   },
 };
 const assistantUiRows = [
+  ['Añadir peso adicional', 'Afegeix pes addicional', 'Add extra weight', 'Ajouter du poids supplémentaire', 'Zusatzgewicht hinzufügen', 'Aggiungi peso aggiuntivo', 'Adicionar peso extra'],
+  ['Quitar peso adicional', 'Treu el pes addicional', 'Remove extra weight', 'Retirer le poids supplémentaire', 'Zusatzgewicht entfernen', 'Rimuovi peso aggiuntivo', 'Remover peso extra'],
+  ['Peso adicional', 'Pes addicional', 'Extra weight', 'Poids supplémentaire', 'Zusatzgewicht', 'Peso aggiuntivo', 'Peso extra'],
+  ['Crear otra rutina', 'Crea una altra rutina', 'Create another routine', 'Créer une autre routine', 'Weitere Trainingsroutine erstellen', 'Crea un’altra routine', 'Criar outra rotina'],
   ['Obtener clave en Google AI Studio', 'Obtén una clau a Google AI Studio', 'Get a key from Google AI Studio', 'Obtenir une clé dans Google AI Studio', 'API-Schlüssel in Google AI Studio erstellen', 'Ottieni una chiave da Google AI Studio', 'Obter uma chave no Google AI Studio'],
   ['Verificar clave', 'Verifica la clau', 'Verify key', 'Vérifier la clé', 'Schlüssel überprüfen', 'Verifica chiave', 'Verificar chave'],
   ['Verificando clave…', 'S’està verificant la clau…', 'Verifying key…', 'Vérification de la clé…', 'Schlüssel wird überprüft…', 'Verifica della chiave…', 'A verificar a chave…'],

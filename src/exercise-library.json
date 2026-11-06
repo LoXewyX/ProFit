@@ -154,7 +154,8 @@
     ],
     "media": "/exercises/006.webm",
     "poster": "/exercises/posters/006.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-007",
@@ -204,7 +205,8 @@
     ],
     "media": "/exercises/008.webm",
     "poster": "/exercises/posters/008.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-009",
@@ -254,7 +256,8 @@
     ],
     "media": "/exercises/010.webm",
     "poster": "/exercises/posters/010.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-011",
@@ -407,7 +410,8 @@
     ],
     "media": "/exercises/016.webm",
     "poster": "/exercises/posters/016.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-017",
@@ -430,7 +434,8 @@
     ],
     "media": "/exercises/017.webm",
     "poster": "/exercises/posters/017.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-018",
@@ -454,7 +459,8 @@
     ],
     "media": "/exercises/018.webm",
     "poster": "/exercises/posters/018.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-019",
@@ -478,7 +484,8 @@
     ],
     "media": "/exercises/019.webm",
     "poster": "/exercises/posters/019.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-020",
@@ -502,7 +509,8 @@
     ],
     "media": "/exercises/020.webm",
     "poster": "/exercises/posters/020.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-021",
@@ -526,7 +534,8 @@
     ],
     "media": "/exercises/021.webm",
     "poster": "/exercises/posters/021.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-022",
@@ -550,7 +559,8 @@
     ],
     "media": "/exercises/022.webm",
     "poster": "/exercises/posters/022.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-023",
@@ -598,7 +608,8 @@
     ],
     "media": "/exercises/024.webm",
     "poster": "/exercises/posters/024.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-025",
@@ -622,7 +633,8 @@
     ],
     "media": "/exercises/025.webm",
     "poster": "/exercises/posters/025.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-026",
@@ -676,7 +688,8 @@
     ],
     "media": "/exercises/027.webm",
     "poster": "/exercises/posters/027.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-028",
@@ -703,7 +716,8 @@
     ],
     "media": "/exercises/028.webm",
     "poster": "/exercises/posters/028.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-029",
@@ -752,7 +766,8 @@
     ],
     "media": "/exercises/030.webm",
     "poster": "/exercises/posters/030.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-031",
@@ -775,7 +790,8 @@
     ],
     "media": "/exercises/031.webm",
     "poster": "/exercises/posters/031.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-032",
@@ -798,7 +814,8 @@
     ],
     "media": "/exercises/032.webm",
     "poster": "/exercises/posters/032.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-033",
@@ -821,7 +838,8 @@
     ],
     "media": "/exercises/033.webm",
     "poster": "/exercises/posters/033.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-034",
@@ -976,7 +994,8 @@
     ],
     "media": "/exercises/039.webm",
     "poster": "/exercises/posters/039.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-040",
@@ -1031,7 +1050,8 @@
     ],
     "media": "/exercises/041.webm",
     "poster": "/exercises/posters/041.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-042",
@@ -1055,7 +1075,8 @@
     ],
     "media": "/exercises/042.webm",
     "poster": "/exercises/posters/042.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-043",
@@ -1333,7 +1354,8 @@
     ],
     "media": "/exercises/053.webm",
     "poster": "/exercises/posters/053.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-054",
@@ -1357,7 +1379,8 @@
     ],
     "media": "/exercises/054.webm",
     "poster": "/exercises/posters/054.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-055",
@@ -1381,7 +1404,8 @@
     ],
     "media": "/exercises/055.webm",
     "poster": "/exercises/posters/055.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-056",
@@ -1405,7 +1429,8 @@
     ],
     "media": "/exercises/056.webm",
     "poster": "/exercises/posters/056.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-057",
@@ -1475,7 +1500,8 @@
     ],
     "media": "/exercises/059.webm",
     "poster": "/exercises/posters/059.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-060",
@@ -1498,7 +1524,8 @@
     ],
     "media": "/exercises/060.webm",
     "poster": "/exercises/posters/060.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-061",
@@ -1569,7 +1596,8 @@
     ],
     "media": "/exercises/063.webm",
     "poster": "/exercises/posters/063.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-064",
@@ -1595,7 +1623,8 @@
     ],
     "media": "/exercises/064.webm",
     "poster": "/exercises/posters/064.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-065",
@@ -1620,7 +1649,8 @@
     ],
     "media": "/exercises/065.webm",
     "poster": "/exercises/posters/065.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-066",
@@ -1671,7 +1701,8 @@
     ],
     "media": "/exercises/067.webm",
     "poster": "/exercises/posters/067.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-068",
@@ -1696,7 +1727,8 @@
     ],
     "media": "/exercises/068.webm",
     "poster": "/exercises/posters/068.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-069",
@@ -1721,7 +1753,8 @@
     ],
     "media": "/exercises/069.webm",
     "poster": "/exercises/posters/069.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-070",
@@ -1795,7 +1828,8 @@
     ],
     "media": "/exercises/072.webm",
     "poster": "/exercises/posters/072.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-073",
@@ -2023,7 +2057,8 @@
     ],
     "media": "/exercises/081.webm",
     "poster": "/exercises/posters/081.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-082",
@@ -2072,7 +2107,8 @@
     ],
     "media": "/exercises/083.webm",
     "poster": "/exercises/posters/083.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-084",
@@ -2205,7 +2241,8 @@
     ],
     "media": "/exercises/088.webm",
     "poster": "/exercises/posters/088.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-089",
@@ -2232,7 +2269,8 @@
     ],
     "media": "/exercises/089.webm",
     "poster": "/exercises/posters/089.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-090",
@@ -2335,7 +2373,8 @@
     ],
     "media": "/exercises/093.webm",
     "poster": "/exercises/posters/093.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-094",
@@ -2359,7 +2398,8 @@
     ],
     "media": "/exercises/094.webm",
     "poster": "/exercises/posters/094.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-095",
@@ -2383,7 +2423,8 @@
     ],
     "media": "/exercises/095.webm",
     "poster": "/exercises/posters/095.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-096",
@@ -2430,7 +2471,8 @@
     ],
     "media": "/exercises/097.webm",
     "poster": "/exercises/posters/097.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-098",
@@ -2505,7 +2547,8 @@
     ],
     "media": "/exercises/100.webm",
     "poster": "/exercises/posters/100.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-101",
@@ -2531,7 +2574,8 @@
     ],
     "media": "/exercises/101.webm",
     "poster": "/exercises/posters/101.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-102",
@@ -2736,7 +2780,8 @@
     ],
     "media": "/exercises/109.webm",
     "poster": "/exercises/posters/109.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-110",
@@ -2892,7 +2937,8 @@
     ],
     "media": "/exercises/115.webm",
     "poster": "/exercises/posters/115.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-116",
@@ -2939,7 +2985,8 @@
     ],
     "media": "/exercises/117.webm",
     "poster": "/exercises/posters/117.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-118",
@@ -2963,7 +3010,8 @@
     ],
     "media": "/exercises/118.webm",
     "poster": "/exercises/posters/118.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-119",
@@ -2987,7 +3035,8 @@
     ],
     "media": "/exercises/119.webm",
     "poster": "/exercises/posters/119.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-120",
@@ -3064,7 +3113,8 @@
     ],
     "media": "/exercises/122.webm",
     "poster": "/exercises/posters/122.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-123",
@@ -3166,7 +3216,8 @@
     ],
     "media": "/exercises/126.webm",
     "poster": "/exercises/posters/126.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-127",
@@ -3190,7 +3241,8 @@
     ],
     "media": "/exercises/127.webm",
     "poster": "/exercises/posters/127.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-128",
@@ -3214,7 +3266,8 @@
     ],
     "media": "/exercises/128.webm",
     "poster": "/exercises/posters/128.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-129",
@@ -3334,7 +3387,8 @@
     ],
     "media": "/exercises/133.webm",
     "poster": "/exercises/posters/133.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-134",
@@ -3382,7 +3436,8 @@
     ],
     "media": "/exercises/135.webm",
     "poster": "/exercises/posters/135.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-136",
@@ -3456,7 +3511,8 @@
     ],
     "media": "/exercises/138.webm",
     "poster": "/exercises/posters/138.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-139",
@@ -3483,7 +3539,8 @@
     ],
     "media": "/exercises/139.webm",
     "poster": "/exercises/posters/139.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-140",
@@ -3531,7 +3588,8 @@
     ],
     "media": "/exercises/141.webm",
     "poster": "/exercises/posters/141.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-142",
@@ -3579,7 +3637,8 @@
     ],
     "media": "/exercises/143.webm",
     "poster": "/exercises/posters/143.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-144",
@@ -3603,7 +3662,8 @@
     ],
     "media": "/exercises/144.webm",
     "poster": "/exercises/posters/144.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-145",
@@ -3655,7 +3715,8 @@
     ],
     "media": "/exercises/146.webm",
     "poster": "/exercises/posters/146.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-147",
@@ -3811,7 +3872,8 @@
     ],
     "media": "/exercises/152.webm",
     "poster": "/exercises/posters/152.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-153",
@@ -3947,7 +4009,8 @@
     ],
     "media": "/exercises/157.webm",
     "poster": "/exercises/posters/157.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-158",
@@ -3970,7 +4033,8 @@
     ],
     "media": "/exercises/158.webm",
     "poster": "/exercises/posters/158.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-159",
@@ -3991,7 +4055,8 @@
     ],
     "media": "/exercises/159.webm",
     "poster": "/exercises/posters/159.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-160",
@@ -4012,7 +4077,8 @@
     ],
     "media": "/exercises/160.webm",
     "poster": "/exercises/posters/160.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-161",
@@ -4058,7 +4124,8 @@
     ],
     "media": "/exercises/162.webm",
     "poster": "/exercises/posters/162.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-163",
@@ -4081,7 +4148,8 @@
     ],
     "media": "/exercises/163.webm",
     "poster": "/exercises/posters/163.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-164",
@@ -4104,7 +4172,8 @@
     ],
     "media": "/exercises/164.webm",
     "poster": "/exercises/posters/164.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-165",
@@ -4179,7 +4248,8 @@
     ],
     "media": "/exercises/167.webm",
     "poster": "/exercises/posters/167.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-168",
@@ -4203,7 +4273,8 @@
     ],
     "media": "/exercises/168.webm",
     "poster": "/exercises/posters/168.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-169",
@@ -4250,7 +4321,8 @@
     ],
     "media": "/exercises/170.webm",
     "poster": "/exercises/posters/170.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-171",
@@ -4274,7 +4346,8 @@
     ],
     "media": "/exercises/171.webm",
     "poster": "/exercises/posters/171.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-172",
@@ -4300,7 +4373,8 @@
     ],
     "media": "/exercises/172.webm",
     "poster": "/exercises/posters/172.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-173",
@@ -4327,7 +4401,8 @@
     ],
     "media": "/exercises/173.webm",
     "poster": "/exercises/posters/173.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-174",
@@ -4351,7 +4426,8 @@
     ],
     "media": "/exercises/174.webm",
     "poster": "/exercises/posters/174.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-175",
@@ -4504,7 +4580,8 @@
     ],
     "media": "/exercises/180.webm",
     "poster": "/exercises/posters/180.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-181",
@@ -4664,7 +4741,8 @@
     ],
     "media": "/exercises/186.webm",
     "poster": "/exercises/posters/186.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-187",
@@ -4923,7 +5001,8 @@
     ],
     "media": "/exercises/196.webm",
     "poster": "/exercises/posters/196.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-197",
@@ -5000,7 +5079,8 @@
     ],
     "media": "/exercises/199.webm",
     "poster": "/exercises/posters/199.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-200",
@@ -5079,7 +5159,8 @@
     ],
     "media": "/exercises/202.webm",
     "poster": "/exercises/posters/202.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-203",
@@ -5155,7 +5236,8 @@
     ],
     "media": "/exercises/205.webm",
     "poster": "/exercises/posters/205.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-206",
@@ -5180,7 +5262,8 @@
     ],
     "media": "/exercises/206.webm",
     "poster": "/exercises/posters/206.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-207",
@@ -5205,7 +5288,8 @@
     ],
     "media": "/exercises/207.webm",
     "poster": "/exercises/posters/207.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-208",
@@ -5353,7 +5437,8 @@
     ],
     "media": "/exercises/213.webm",
     "poster": "/exercises/posters/213.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-214",
@@ -5377,7 +5462,8 @@
     ],
     "media": "/exercises/214.webm",
     "poster": "/exercises/posters/214.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-215",
@@ -5401,7 +5487,8 @@
     ],
     "media": "/exercises/215.webm",
     "poster": "/exercises/posters/215.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-216",
@@ -5627,7 +5714,8 @@
     ],
     "media": "/exercises/224.webm",
     "poster": "/exercises/posters/224.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-225",
@@ -5652,7 +5740,8 @@
     ],
     "media": "/exercises/225.webm",
     "poster": "/exercises/posters/225.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-226",
@@ -5702,7 +5791,8 @@
     ],
     "media": "/exercises/227.webm",
     "poster": "/exercises/posters/227.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-228",
@@ -5751,7 +5841,8 @@
     ],
     "media": "/exercises/229.webm",
     "poster": "/exercises/posters/229.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-230",
@@ -5849,7 +5940,8 @@
     ],
     "media": "/exercises/233.webm",
     "poster": "/exercises/posters/233.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-234",
@@ -5906,7 +5998,8 @@
     ],
     "media": "/exercises/235.webm",
     "poster": "/exercises/posters/235.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-236",
@@ -5931,7 +6024,8 @@
     ],
     "media": "/exercises/236.webm",
     "poster": "/exercises/posters/236.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-237",
@@ -6007,7 +6101,8 @@
     ],
     "media": "/exercises/239.webm",
     "poster": "/exercises/posters/239.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-240",
@@ -6030,7 +6125,8 @@
     ],
     "media": "/exercises/240.webm",
     "poster": "/exercises/posters/240.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-241",
@@ -6106,7 +6202,8 @@
     ],
     "media": "/exercises/243.webm",
     "poster": "/exercises/posters/243.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-244",
@@ -6131,7 +6228,8 @@
     ],
     "media": "/exercises/244.webm",
     "poster": "/exercises/posters/244.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-245",
@@ -6203,7 +6301,8 @@
     ],
     "media": "/exercises/247.webm",
     "poster": "/exercises/posters/247.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-248",
@@ -6253,7 +6352,8 @@
     ],
     "media": "/exercises/249.webm",
     "poster": "/exercises/posters/249.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-250",
@@ -6280,7 +6380,8 @@
     ],
     "media": "/exercises/250.webm",
     "poster": "/exercises/posters/250.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-251",
@@ -6304,7 +6405,8 @@
     ],
     "media": "/exercises/251.webm",
     "poster": "/exercises/posters/251.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-252",
@@ -6329,7 +6431,8 @@
     ],
     "media": "/exercises/252.webm",
     "poster": "/exercises/posters/252.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-253",
@@ -6380,7 +6483,8 @@
     ],
     "media": "/exercises/254.webm",
     "poster": "/exercises/posters/254.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-255",
@@ -6405,7 +6509,8 @@
     ],
     "media": "/exercises/255.webm",
     "poster": "/exercises/posters/255.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-256",
@@ -6629,7 +6734,8 @@
     ],
     "media": "/exercises/264.webm",
     "poster": "/exercises/posters/264.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-265",
@@ -6652,7 +6758,8 @@
     ],
     "media": "/exercises/265.webm",
     "poster": "/exercises/posters/265.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-266",
@@ -6675,7 +6782,8 @@
     ],
     "media": "/exercises/266.webm",
     "poster": "/exercises/posters/266.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-267",
@@ -6725,7 +6833,8 @@
     ],
     "media": "/exercises/268.webm",
     "poster": "/exercises/posters/268.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-269",
@@ -6750,7 +6859,8 @@
     ],
     "media": "/exercises/269.webm",
     "poster": "/exercises/posters/269.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-270",
@@ -6775,7 +6885,8 @@
     ],
     "media": "/exercises/270.webm",
     "poster": "/exercises/posters/270.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-271",
@@ -6826,7 +6937,8 @@
     ],
     "media": "/exercises/272.webm",
     "poster": "/exercises/posters/272.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-273",
@@ -6852,7 +6964,8 @@
     ],
     "media": "/exercises/273.webm",
     "poster": "/exercises/posters/273.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-274",
@@ -6905,7 +7018,8 @@
     ],
     "media": "/exercises/275.webm",
     "poster": "/exercises/posters/275.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-276",
@@ -6957,7 +7071,8 @@
     ],
     "media": "/exercises/277.webm",
     "poster": "/exercises/posters/277.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-278",
@@ -7009,7 +7124,8 @@
     ],
     "media": "/exercises/279.webm",
     "poster": "/exercises/posters/279.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-280",
@@ -7034,7 +7150,8 @@
     ],
     "media": "/exercises/280.webm",
     "poster": "/exercises/posters/280.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-281",
@@ -7059,7 +7176,8 @@
     ],
     "media": "/exercises/281.webm",
     "poster": "/exercises/posters/281.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-282",
@@ -7082,7 +7200,8 @@
     ],
     "media": "/exercises/282.webm",
     "poster": "/exercises/posters/282.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-283",
@@ -7187,7 +7306,8 @@
     ],
     "media": "/exercises/286.webm",
     "poster": "/exercises/posters/286.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-287",
@@ -7212,7 +7332,8 @@
     ],
     "media": "/exercises/287.webm",
     "poster": "/exercises/posters/287.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-288",
@@ -7237,7 +7358,8 @@
     ],
     "media": "/exercises/288.webm",
     "poster": "/exercises/posters/288.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-289",
@@ -7262,7 +7384,8 @@
     ],
     "media": "/exercises/289.webm",
     "poster": "/exercises/posters/289.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-290",
@@ -7312,7 +7435,8 @@
     ],
     "media": "/exercises/291.webm",
     "poster": "/exercises/posters/291.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-292",
@@ -7407,7 +7531,8 @@
     ],
     "media": "/exercises/295.webm",
     "poster": "/exercises/posters/295.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-296",
@@ -7432,7 +7557,8 @@
     ],
     "media": "/exercises/296.webm",
     "poster": "/exercises/posters/296.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-297",
@@ -7482,7 +7608,8 @@
     ],
     "media": "/exercises/298.webm",
     "poster": "/exercises/posters/298.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-299",
@@ -7506,7 +7633,8 @@
     ],
     "media": "/exercises/299.webm",
     "poster": "/exercises/posters/299.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-300",
@@ -7531,7 +7659,8 @@
     ],
     "media": "/exercises/300.webm",
     "poster": "/exercises/posters/300.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-301",
@@ -7557,7 +7686,8 @@
     ],
     "media": "/exercises/301.webm",
     "poster": "/exercises/posters/301.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-302",
@@ -7582,7 +7712,8 @@
     ],
     "media": "/exercises/302.webm",
     "poster": "/exercises/posters/302.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-303",
@@ -7607,7 +7738,8 @@
     ],
     "media": "/exercises/303.webm",
     "poster": "/exercises/posters/303.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-304",
@@ -7655,7 +7787,8 @@
     ],
     "media": "/exercises/305.webm",
     "poster": "/exercises/posters/305.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-306",
@@ -7816,7 +7949,8 @@
     ],
     "media": "/exercises/311.webm",
     "poster": "/exercises/posters/311.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-312",
@@ -7842,7 +7976,8 @@
     ],
     "media": "/exercises/312.webm",
     "poster": "/exercises/posters/312.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-313",
@@ -7868,7 +8003,8 @@
     ],
     "media": "/exercises/313.webm",
     "poster": "/exercises/posters/313.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-314",
@@ -7947,7 +8083,8 @@
     ],
     "media": "/exercises/316.webm",
     "poster": "/exercises/posters/316.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-317",
@@ -7994,7 +8131,8 @@
     ],
     "media": "/exercises/318.webm",
     "poster": "/exercises/posters/318.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-319",
@@ -8041,7 +8179,8 @@
     ],
     "media": "/exercises/320.webm",
     "poster": "/exercises/posters/320.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-321",
@@ -8065,7 +8204,8 @@
     ],
     "media": "/exercises/321.webm",
     "poster": "/exercises/posters/321.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-322",
@@ -8089,7 +8229,8 @@
     ],
     "media": "/exercises/322.webm",
     "poster": "/exercises/posters/322.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-323",
@@ -8138,7 +8279,8 @@
     ],
     "media": "/exercises/324.webm",
     "poster": "/exercises/posters/324.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-325",
@@ -8163,7 +8305,8 @@
     ],
     "media": "/exercises/325.webm",
     "poster": "/exercises/posters/325.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-326",
@@ -8212,7 +8355,8 @@
     ],
     "media": "/exercises/327.webm",
     "poster": "/exercises/posters/327.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-328",
@@ -8237,7 +8381,8 @@
     ],
     "media": "/exercises/328.webm",
     "poster": "/exercises/posters/328.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-329",
@@ -8258,7 +8403,8 @@
     ],
     "media": "/exercises/329.webm",
     "poster": "/exercises/posters/329.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-330",
@@ -8281,7 +8427,8 @@
     ],
     "media": "/exercises/330.webm",
     "poster": "/exercises/posters/330.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-331",
@@ -8304,7 +8451,8 @@
     ],
     "media": "/exercises/331.webm",
     "poster": "/exercises/posters/331.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-332",
@@ -8329,7 +8477,8 @@
     ],
     "media": "/exercises/332.webm",
     "poster": "/exercises/posters/332.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-333",
@@ -8405,7 +8554,8 @@
     ],
     "media": "/exercises/335.webm",
     "poster": "/exercises/posters/335.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-336",
@@ -8429,7 +8579,8 @@
     ],
     "media": "/exercises/336.webm",
     "poster": "/exercises/posters/336.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-337",
@@ -8453,7 +8604,8 @@
     ],
     "media": "/exercises/337.webm",
     "poster": "/exercises/posters/337.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-338",
@@ -8477,7 +8629,8 @@
     ],
     "media": "/exercises/338.webm",
     "poster": "/exercises/posters/338.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-339",
@@ -8552,7 +8705,8 @@
     ],
     "media": "/exercises/341.webm",
     "poster": "/exercises/posters/341.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-342",
@@ -8628,7 +8782,8 @@
     ],
     "media": "/exercises/344.webm",
     "poster": "/exercises/posters/344.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-345",
@@ -8651,7 +8806,8 @@
     ],
     "media": "/exercises/345.webm",
     "poster": "/exercises/posters/345.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-346",
@@ -8677,7 +8833,8 @@
     ],
     "media": "/exercises/346.webm",
     "poster": "/exercises/posters/346.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-347",
@@ -8726,7 +8883,8 @@
     ],
     "media": "/exercises/348.webm",
     "poster": "/exercises/posters/348.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-349",
@@ -8747,7 +8905,8 @@
     ],
     "media": "/exercises/349.webm",
     "poster": "/exercises/posters/349.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-350",
@@ -8768,7 +8927,8 @@
     ],
     "media": "/exercises/350.webm",
     "poster": "/exercises/posters/350.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-351",
@@ -8865,7 +9025,8 @@
     ],
     "media": "/exercises/354.webm",
     "poster": "/exercises/posters/354.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-355",
@@ -8916,7 +9077,8 @@
     ],
     "media": "/exercises/356.webm",
     "poster": "/exercises/posters/356.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-357",
@@ -8942,7 +9104,8 @@
     ],
     "media": "/exercises/357.webm",
     "poster": "/exercises/posters/357.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-358",
@@ -8990,7 +9153,8 @@
     ],
     "media": "/exercises/359.webm",
     "poster": "/exercises/posters/359.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-360",
@@ -9014,7 +9178,8 @@
     ],
     "media": "/exercises/360.webm",
     "poster": "/exercises/posters/360.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-361",
@@ -9038,7 +9203,8 @@
     ],
     "media": "/exercises/361.webm",
     "poster": "/exercises/posters/361.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-362",
@@ -9215,7 +9381,8 @@
     ],
     "media": "/exercises/368.webm",
     "poster": "/exercises/posters/368.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-369",
@@ -9236,7 +9403,8 @@
     ],
     "media": "/exercises/369.webm",
     "poster": "/exercises/posters/369.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-370",
@@ -9364,7 +9532,8 @@
     ],
     "media": "/exercises/374.webm",
     "poster": "/exercises/posters/374.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-375",
@@ -9387,7 +9556,8 @@
     ],
     "media": "/exercises/375.webm",
     "poster": "/exercises/posters/375.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-376",
@@ -9493,7 +9663,8 @@
     ],
     "media": "/exercises/379.webm",
     "poster": "/exercises/posters/379.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-380",
@@ -9571,7 +9742,8 @@
     ],
     "media": "/exercises/382.webm",
     "poster": "/exercises/posters/382.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-383",
@@ -9595,7 +9767,8 @@
     ],
     "media": "/exercises/383.webm",
     "poster": "/exercises/posters/383.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-384",
@@ -9619,7 +9792,8 @@
     ],
     "media": "/exercises/384.webm",
     "poster": "/exercises/posters/384.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-385",
@@ -9643,7 +9817,8 @@
     ],
     "media": "/exercises/385.webm",
     "poster": "/exercises/posters/385.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-386",
@@ -9845,7 +10020,8 @@
     ],
     "media": "/exercises/393.webm",
     "poster": "/exercises/posters/393.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-394",
@@ -9869,7 +10045,8 @@
     ],
     "media": "/exercises/394.webm",
     "poster": "/exercises/posters/394.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-395",
@@ -9893,7 +10070,8 @@
     ],
     "media": "/exercises/395.webm",
     "poster": "/exercises/posters/395.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-396",
@@ -9967,7 +10145,8 @@
     ],
     "media": "/exercises/398.webm",
     "poster": "/exercises/posters/398.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-399",
@@ -9992,7 +10171,8 @@
     ],
     "media": "/exercises/399.webm",
     "poster": "/exercises/posters/399.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-400",
@@ -10042,7 +10222,8 @@
     ],
     "media": "/exercises/401.webm",
     "poster": "/exercises/posters/401.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-402",
@@ -10068,7 +10249,8 @@
     ],
     "media": "/exercises/402.webm",
     "poster": "/exercises/posters/402.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-403",
@@ -10146,7 +10328,8 @@
     ],
     "media": "/exercises/405.webm",
     "poster": "/exercises/posters/405.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-406",
@@ -10222,7 +10405,8 @@
     ],
     "media": "/exercises/408.webm",
     "poster": "/exercises/posters/408.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-409",
@@ -10246,7 +10430,8 @@
     ],
     "media": "/exercises/409.webm",
     "poster": "/exercises/posters/409.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-410",
@@ -10270,7 +10455,8 @@
     ],
     "media": "/exercises/410.webm",
     "poster": "/exercises/posters/410.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-411",
@@ -10378,7 +10564,8 @@
     ],
     "media": "/exercises/414.webm",
     "poster": "/exercises/posters/414.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-415",
@@ -10404,7 +10591,8 @@
     ],
     "media": "/exercises/415.webm",
     "poster": "/exercises/posters/415.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-416",
@@ -10534,7 +10722,8 @@
     ],
     "media": "/exercises/420.webm",
     "poster": "/exercises/posters/420.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-421",
@@ -10558,7 +10747,8 @@
     ],
     "media": "/exercises/421.webm",
     "poster": "/exercises/posters/421.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-422",
@@ -10603,7 +10793,8 @@
     ],
     "media": "/exercises/423.webm",
     "poster": "/exercises/posters/423.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-424",
@@ -10624,7 +10815,8 @@
     ],
     "media": "/exercises/424.webm",
     "poster": "/exercises/posters/424.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-425",
@@ -10645,7 +10837,8 @@
     ],
     "media": "/exercises/425.webm",
     "poster": "/exercises/posters/425.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-426",
@@ -10666,7 +10859,8 @@
     ],
     "media": "/exercises/426.webm",
     "poster": "/exercises/posters/426.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-427",
@@ -10710,7 +10904,8 @@
     ],
     "media": "/exercises/428.webm",
     "poster": "/exercises/posters/428.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-429",
@@ -10733,7 +10928,8 @@
     ],
     "media": "/exercises/429.webm",
     "poster": "/exercises/posters/429.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-430",
@@ -10820,7 +11016,8 @@
     ],
     "media": "/exercises/433.webm",
     "poster": "/exercises/posters/433.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-434",
@@ -10844,7 +11041,8 @@
     ],
     "media": "/exercises/434.webm",
     "poster": "/exercises/posters/434.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-435",
@@ -10868,7 +11066,8 @@
     ],
     "media": "/exercises/435.webm",
     "poster": "/exercises/posters/435.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-436",
@@ -10917,7 +11116,8 @@
     ],
     "media": "/exercises/437.webm",
     "poster": "/exercises/posters/437.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-438",
@@ -10941,7 +11141,8 @@
     ],
     "media": "/exercises/438.webm",
     "poster": "/exercises/posters/438.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-439",
@@ -11019,7 +11220,8 @@
     ],
     "media": "/exercises/441.webm",
     "poster": "/exercises/posters/441.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-442",
@@ -11094,7 +11296,8 @@
     ],
     "media": "/exercises/444.webm",
     "poster": "/exercises/posters/444.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-445",
@@ -11147,7 +11350,8 @@
     ],
     "media": "/exercises/446.webm",
     "poster": "/exercises/posters/446.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": false
   },
   {
     "id": "library-447",
@@ -11168,7 +11372,8 @@
     ],
     "media": "/exercises/447.webm",
     "poster": "/exercises/posters/447.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   },
   {
     "id": "library-448",
@@ -11272,6 +11477,7 @@
     ],
     "media": "/exercises/451.webm",
     "poster": "/exercises/posters/451.webp",
-    "muscleMapVersion": 6
+    "muscleMapVersion": 6,
+    "trackWeight": true
   }
 ]
